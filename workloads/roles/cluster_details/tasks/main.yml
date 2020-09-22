@@ -3,6 +3,12 @@
   shell: |
     {%raw%}oc get machineset -n openshift-machine-api -o=go-template='{{index (index .items 0).metadata.labels "machine.openshift.io/cluster-api-cluster"}}'{%endraw%}
   register: cluster_name
+  when: ocp_cluster_environment == 'local'
+
+- name: Get cluster name
+  shell: "echo 'IBM_CLOUD_CLUSTER'"
+  register: cluster_name
+  when: ocp_cluster_environment == 'ibm_cloud'
 
 - name: get install config
   shell: oc get configmap -n kube-system -o=jsonpath='{.items[?(@.metadata.name=="cluster-config-v1")].data.install-config}'
