@@ -51,3 +51,6 @@ mastervertical_projects: "{{ lookup('env', 'MASTERVERTICAL_PROJECTS')|default(10
 
 # Pass/fail criteria
 expected_mastervertical_duration: "{{ lookup('env', 'EXPECTED_MASTERVERTICAL_DURATION')|default(600, true)|int }}"
+
+# Cluster environment
+ocp_cluster_environment: "{{ lookup('env', 'OCP_CLUSTER_ENV')|default('ibm_cloud', true) }}"

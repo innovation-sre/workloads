@@ -11,7 +11,8 @@
   when: ocp_cluster_environment == 'ibm_cloud'
 
 - name: get install config
-  shell: oc get configmap -n kube-system -o=jsonpath='{.items[?(@.metadata.name=="cluster-config-v1")].data.install-config}'
+  #shell: oc get configmap -n kube-system -o=jsonpath='{.items[?(@.metadata.name=="cluster-config-v1")].data.install-config}'
+  shell: oc get dnses.config.openshift.io/cluster -o jsonpath='{.spec.baseDomain}'
   register: install_config
 
 - name: setting cluster name
