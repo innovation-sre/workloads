@@ -13,7 +13,7 @@ data:
     echo "" > /var/lib/pbench-agent/tools-default/oc
     echo "workload" > /var/lib/pbench-agent/tools-default/label
     source /opt/pbench-agent/profile
-    if [[ -v ENABLE_PBENCH_AGENTS ]]; then
+    if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
       # clear tools/remotes to make sure there are no invalid remotes
       set +eo pipefail
       pbench-clear-tools
@@ -24,20 +24,20 @@ data:
       echo "" > /var/lib/pbench-agent/tools-default/perf
       echo "" > /var/lib/pbench-agent/tools-default/pidstat
       echo "" > /var/lib/pbench-agent/tools-default/sar
-      master_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/master= --no-headers | awk '{print $1}'`
+      master_nodes=`oc get nodes -l pbench_agent=true,pbench_role=master --no-headers | awk '{print $1}'`
       for node in $master_nodes; do
         echo "master" > /var/lib/pbench-agent/tools-default/remote@$node
       done
-      infra_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/infra= --no-headers | awk '{print $1}'`
+      infra_nodes=`oc get nodes -l pbench_agent=true,pbench_role=infra --no-headers | awk '{print $1}'`
       for node in $infra_nodes; do
         echo "infra" > /var/lib/pbench-agent/tools-default/remote@$node
       done
-      worker_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/worker= --no-headers | awk '{print $1}'`
+      worker_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
       for node in $worker_nodes; do
         echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
       done
       # FIO test expect storage backend - get label for these nodes too
-      storage_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/storage= --no-headers | awk '{print $1}'`
+      storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
       for node in $storage_nodes; do
         echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
       done
@@ -66,13 +66,14 @@ data:
     done
     ## necessary for user diffrent than root
     clients=`oc get pods --output=json -n {{ fiotest_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
-    mv ~/.ssh/config ~/.ssh/config.bak || true
+    touch /.ssh/config
+    mv /.ssh/config /.ssh/config.bak || true
     for host in $(echo "${clients}" | sed "s/,/ /g");
     do
-      HOST=${host} envsubst < /root/workload/ssh_config.template >> ~/.ssh/config
+      HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
     done
-    cat ~/.ssh/config.bak >> ~/.ssh/config || true
-    chmod 0600 ~/.ssh/config
+    cat /.ssh/config.bak >> ~/.ssh/config || true
+    chmod 0600 /.ssh/config
     cp /root/workload/fiotest.sh /tmp/
 
     # Execute fio test
@@ -102,6 +103,9 @@ data:
     sed -i 's/\-o StrictHostKeyChecking=no/\-o StrictHostKeyChecking=no \-l default \-p 2022/g' /opt/pbench-agent/base
     # to do - fix pbench-fio to support custom options
     oc get pods -n {{ fiotest_basename }}0 -o wide | awk '{print $6}' |grep -v IP > /tmp/clients.txt
+    echo "FIO Version $(fio --version)"
+    export PATH="/opt/rh/rh-python36/root/usr/bin/:$PATH"
+    echo "Path set for python3"
     pbench-fio --test-types={{ fiotest_testtype }} --config="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" \
     --clients=$(cat /tmp/clients.txt | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/') -b {{ fiotest_bs }} \
     --samples {{ fiotest_samples }} --runtime {{ fiotest_runtime }}  --iodepth {{ fiotest_iodepth }} --direct {{ fiotest_direct }} \
@@ -152,6 +156,12 @@ data:
         name: "${PVC_NAME}"
         annotations:
           volume.beta.kubernetes.io/storage-class: {{ fiotest_storageclass }}
+        {% if ocp_cluster_environment == 'ibm_cloud' %}
+        labels:
+          billingType: "{{ ibm_cloud_storage_billing }}"
+          region: "{{ ibm_cloud_storage_region }}"
+          zone: "{{ ibm_cloud_storage_zone }}"
+        {% endif %}
       spec:
         accessModes:
          - {{ fiotest_access_modes }}
