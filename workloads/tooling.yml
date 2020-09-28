@@ -109,7 +109,7 @@
 
     - name: Label rest as worker nodes
       shell: |
-        oc get nodes | sed -n '5,$p' | awk '{print $1}' | xargs -I % oc label nodes % --overwrite pbench_agent=true pbench_role=worker
+        oc get nodes | sed -n '5,6p' | awk '{print $1}' | xargs -I % oc label nodes % --overwrite pbench_agent=true pbench_role=worker
 
     - name: Create kubeconfig secret
       shell: |
