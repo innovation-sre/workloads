@@ -13,7 +13,7 @@ data:
     echo "" > /var/lib/pbench-agent/tools-default/oc
     echo "workload" > /var/lib/pbench-agent/tools-default/label
     source /opt/pbench-agent/profile
-    if [[ -v ENABLE_PBENCH_AGENTS ]]; then
+    if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
       # clear tools/remotes to make sure there are no invalid remotes
       set +eo pipefail
       pbench-clear-tools
@@ -24,20 +24,20 @@ data:
       echo "" > /var/lib/pbench-agent/tools-default/perf
       echo "" > /var/lib/pbench-agent/tools-default/pidstat
       echo "" > /var/lib/pbench-agent/tools-default/sar
-      master_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/master= --no-headers | awk '{print $1}'`
+      master_nodes=`oc get nodes -l pbench_agent=true,pbench_role=master --no-headers | awk '{print $1}'`
       for node in $master_nodes; do
         echo "master" > /var/lib/pbench-agent/tools-default/remote@$node
       done
-      infra_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/infra= --no-headers | awk '{print $1}'`
+      infra_nodes=`oc get nodes -l pbench_agent=true,pbench_role=infra --no-headers | awk '{print $1}'`
       for node in $infra_nodes; do
         echo "infra" > /var/lib/pbench-agent/tools-default/remote@$node
       done
-      worker_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/worker= --no-headers | awk '{print $1}'`
+      worker_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
       for node in $worker_nodes; do
         echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
       done
       # FIO test expect storage backend - get label for these nodes too
-      storage_nodes=`oc get nodes -l pbench_agent=true,node-role.kubernetes.io/storage= --no-headers | awk '{print $1}'`
+      storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
       for node in $storage_nodes; do
         echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
       done
@@ -56,7 +56,9 @@ data:
     export es={{ snafu_es_host }}
     export es_port={{ snafu_es_port }}
     export es_index={{ snafu_es_index_prefix }}
-    pbench-user-benchmark --config="{{ fiotest_prefix }}-pods-{{ fiotest_maxpods }}-sc-{{ fiotest_storageclass }}-create_pods-{{ fiotest_description }}" -- 'VIPERCONFIG=/root/workload/fiotest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests'
+    #pbench-user-benchmark --config="{{ fiotest_prefix }}-pods-{{ fiotest_maxpods }}-sc-{{ fiotest_storageclass }}-create_pods-{{ fiotest_description }}" -- 'VIPERCONFIG=/root/workload/fiotest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests'
+    VIPERCONFIG=/root/workload/fiotest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
+
     echo "$(date -u) Pods for FIO I/O test created."
 
     # wait until all pods are started and then collect data
@@ -66,22 +68,25 @@ data:
     done
     ## necessary for user diffrent than root
     clients=`oc get pods --output=json -n {{ fiotest_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
-    mv ~/.ssh/config ~/.ssh/config.bak || true
+    touch /.ssh/config
+    mv /.ssh/config /.ssh/config.bak || true
     for host in $(echo "${clients}" | sed "s/,/ /g");
     do
-      HOST=${host} envsubst < /root/workload/ssh_config.template >> ~/.ssh/config
+      HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
     done
-    cat ~/.ssh/config.bak >> ~/.ssh/config || true
-    chmod 0600 ~/.ssh/config
-    cp /root/workload/fiotest.sh /tmp/
+    cat /.ssh/config.bak >> ~/.ssh/config || true
+    chmod 0600 /.ssh/config
+    #cp /root/workload/fiotest.sh /tmp/
 
     # Execute fio test
-    /tmp/fiotest.sh
+    # /tmp/fiotest.sh
+    #pbench-user-benchmark --config="{{ fiotest_prefix }}-pods-{{ fiotest_maxpods }}-sc-{{ fiotest_storageclass }}-create_pods-{{ fiotest_description }}" -- sh /tmp/fiotest.sh
     # todo: improve no-pbench test case
-    if [[ {{ enable_pbench_copy }} == "true" ]]; then
-      pbench-copy-results --prefix "{{ fiotest_prefix }}"-"{{ fiotest_maxpods }}"-"{{ fiotest_storageclass }}"
-    fi
+    #if [[ {{ enable_pbench_copy }} == "true" ]]; then
+    #  pbench-copy-results --prefix "{{ fiotest_prefix }}"-"{{ fiotest_maxpods }}"-"{{ fiotest_storageclass }}"
+    #fi
 
+    kubectl logs -l name=fio -n {{ fiotest_basename }}0 -f
     if [[ {{ fiotest_cleanup }} == "true" ]]; then
        oc delete project {{ fiotest_basename }}0
        while [ "$(oc get project |grep {{ fiotest_basename }}0 | awk '{print $1}')" == {{ fiotest_basename }}0 ]; do
@@ -92,20 +97,6 @@ data:
     elif [[ {{ fiotest_cleanup }} == "false" ]]; then
        echo "Test is done, but project {{ fiotest_basename }}0 is not be deleted due to FIOTEST_CLAENUP=false"
     fi
-  fiotest.sh: |
-    #!/bin/bash
-    cp /root/.kube/config /tmp/config
-    export KUBECONFIG=/tmp/config
-    export CONFIG=/opt/pbench-agent/config/pbench-agent.cfg
-    source /opt/pbench-agent/profile
-    # Not sure is this necessary - re-test
-    sed -i 's/\-o StrictHostKeyChecking=no/\-o StrictHostKeyChecking=no \-l default \-p 2022/g' /opt/pbench-agent/base
-    # to do - fix pbench-fio to support custom options
-    oc get pods -n {{ fiotest_basename }}0 -o wide | awk '{print $6}' |grep -v IP > /tmp/clients.txt
-    pbench-fio --test-types={{ fiotest_testtype }} --config="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" \
-    --clients=$(cat /tmp/clients.txt | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/') -b {{ fiotest_bs }} \
-    --samples {{ fiotest_samples }} --runtime {{ fiotest_runtime }}  --iodepth {{ fiotest_iodepth }} --direct {{ fiotest_direct }} \
-    --targets {{ fiotest_filename }} -s {{ fiotest_filesize }}
   fiotest.yml: |
     provider: local
     ClusterLoader:
@@ -147,11 +138,46 @@ data:
       name: fiotest-test
     objects:
     - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: fio-script
+      data:
+        fiotest.sh: |
+          #!/bin/bash
+          #cp /root/.kube/config /tmp/config
+          #export KUBECONFIG=/tmp/config
+          export CONFIG=/opt/pbench-agent/config/pbench-agent.cfg
+          source /opt/pbench-agent/profile
+          # Not sure is this necessary - re-test
+          #sed -i 's/\-o StrictHostKeyChecking=no/\-o StrictHostKeyChecking=no \-l default \-p 2022/g' /opt/pbench-agent/base
+          # to do - fix pbench-fio to support custom options
+          #oc get pods -n {{ fiotest_basename }}0 -o wide | awk '{print $6}' |grep -v IP > /tmp/clients.txt
+          export PATH="/opt/rh/rh-python36/root/usr/bin/:$PATH"
+          echo "FIO Version $(fio --version)"
+          echo "Path set for python3"
+          #fio --test-types=write --config="write-pods1-storageclass-ibmc-block-silver-" \
+          #--clients=$(cat /tmp/clients.txt | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/') -b 4 \
+          #--samples 1 --runtime 600  --iodepth 1 --direct 0 \
+          #--targets "/mnt/pvcmount/f2" -s "1GB"
+
+          for i in $(seq 1 {{ fiotest_samples }}); do
+              echo "Sampling $i"
+              cd /mnt/pvcmount && fio --rw={{ fiotest_testtype }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
+               --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
+               --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}"
+          done
+    - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: "${PVC_NAME}"
         annotations:
           volume.beta.kubernetes.io/storage-class: {{ fiotest_storageclass }}
+        {% if ocp_cluster_environment == 'ibm_cloud' %}
+        labels:
+          billingType: "{{ ibm_cloud_storage_billing }}"
+          region: "{{ ibm_cloud_storage_region }}"
+          zone: "{{ ibm_cloud_storage_zone }}"
+        {% endif %}
       spec:
         accessModes:
          - {{ fiotest_access_modes }}
@@ -179,8 +205,11 @@ data:
               - name: "fio"
                 image: "{{ fiotest_container_image }}"
                 imagePullPolicy: IfNotPresent
+                command: ["/root/workload/fiotest.sh"]
                 env:
                   - name: FIO_SSH_PORT
+                    value: "{{ fio_ssh_port }}"
+                  - name: SSH_PORT
                     value: "{{ fio_ssh_port }}"
                 securityContext: {}
                 volumeMounts:
@@ -194,6 +223,8 @@ data:
                     mountPath: /var/lib/pbench-agent
                   - name: persistentvolume
                     mountPath: "/mnt/pvcmount"
+                  - name: fio-script
+                    mountPath: /root/workload/
             dnsPolicy: ClusterFirst
             securityContext: {}
             restartPolicy: Always
@@ -207,6 +238,10 @@ data:
               - name: persistentvolume
                 persistentVolumeClaim:
                   claimName: "${PVC_NAME}"
+              - name: fio-script
+                configMap:
+                  name: fio-script
+                  defaultMode: 0777
     parameters:
     - name: PVC_NAME
       description: PVC name

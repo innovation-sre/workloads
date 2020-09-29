@@ -62,16 +62,18 @@ spec:
         hostPath:
           path: /var/lib/kubelet/pods
       serviceAccountName: useroot
+      nodeSelector:
+        pbench_role: "worker"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: node-role.kubernetes.io/worker
-                operator: Exists
-              - key: node-role.kubernetes.io/infra
-                operator: DoesNotExist
               - key: pbench_agent
                 operator: In
                 values:
                 - "true"
+              - key: pbench_role
+                operator: In
+                values:
+                - "worker"

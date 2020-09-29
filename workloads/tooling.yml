@@ -99,17 +99,17 @@
       shell: |
         oc label nodes -l pbench_agent=true pbench_agent-
 
-    - name: Label master nodes
-      shell: |
-        oc label nodes --overwrite -l 'node-role.kubernetes.io/master=' pbench_agent=true
-
     - name: Label infra nodes
       shell: |
-        oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' pbench_agent=true
+        oc get nodes | sed -n '2p' | awk '{print $1}'| xargs -I % oc label nodes % --overwrite pbench_agent=true pbench_role=infra
 
-    - name: Label two worker nodes
+    - name: Label master nodes
       shell: |
-        oc get nodes -l node-role.kubernetes.io/worker= --no-headers | grep -v infra | head -n 2 | awk '{print $1}' | xargs -I % oc label nodes % --overwrite pbench_agent=true
+        oc get nodes | sed -n '3,4p' | awk '{print $1}'| xargs -I % oc label nodes % --overwrite pbench_agent=true pbench_role=master
+
+    - name: Label rest as worker nodes
+      shell: |
+        oc get nodes | sed -n '5,6p' | awk '{print $1}' | xargs -I % oc label nodes % --overwrite pbench_agent=true pbench_role=worker
 
     - name: Create kubeconfig secret
       shell: |
