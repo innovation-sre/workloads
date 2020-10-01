@@ -95,7 +95,7 @@ data:
        done
        echo "Project {{ fiotest_basename }}0 is deleted ... test finished"
     elif [[ {{ fiotest_cleanup }} == "false" ]]; then
-       echo "Test is done, but project {{ fiotest_basename }}0 is not be deleted due to FIOTEST_CLAENUP=false"
+       echo "Test is done, but project {{ fiotest_basename }}0 is not be deleted due to FIOTEST_CLEANUP=false"
     fi
   fiotest.yml: |
     provider: local
@@ -117,7 +117,7 @@ data:
               file: fiotesttemplate.yaml
               parameters:
               - FIOTEST_CONTAINER_IMAGE: {{ fiotest_container_image }}
-              - FIO_SSH_PORT: {{ fio_ssh_port }}
+              - FIO_SSH_PORT: {{ fiotest_ssh_port }}
       tuningsets:
         - name: default
           pods:
@@ -208,9 +208,9 @@ data:
                 command: ["/root/workload/fiotest.sh"]
                 env:
                   - name: FIO_SSH_PORT
-                    value: "{{ fio_ssh_port }}"
+                    value: "{{ fiotest_ssh_port }}"
                   - name: SSH_PORT
-                    value: "{{ fio_ssh_port }}"
+                    value: "{{ fiotest_ssh_port }}"
                 securityContext: {}
                 volumeMounts:
                   - name: pbench-ssh
@@ -295,7 +295,7 @@ data:
   ssh_config.template: |
     Host ${HOST}
     user default
-    port ${FIO_SSH_PORT}
+    port ${FIOTEST_SSH_PORT}
     StrictHostKeyChecking no
     PasswordAuthentication no
     UserKnownHostsFile /dev/null

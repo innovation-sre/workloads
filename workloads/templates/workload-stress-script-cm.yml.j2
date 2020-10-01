@@ -1,0 +1,297 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scale-ci-workload-script
+data:
+  run.sh: |
+    #!/bin/sh
+    set -eo pipefail
+    # pbench Configuration
+    echo "$(date -u) Configuring pbench for FIO I/O scale test"
+    mkdir -p /var/lib/pbench-agent/tools-default/
+    echo "${USER_NAME:-default}:x:$(id -u):0:${USER_NAME:-default} user:${HOME}:/sbin/nologin" >> /etc/passwd
+    echo "" > /var/lib/pbench-agent/tools-default/oc
+    echo "workload" > /var/lib/pbench-agent/tools-default/label
+    source /opt/pbench-agent/profile
+    if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
+      # clear tools/remotes to make sure there are no invalid remotes
+      set +eo pipefail
+      pbench-clear-tools
+      set -eo pipefail
+      echo "" > /var/lib/pbench-agent/tools-default/disk
+      echo "" > /var/lib/pbench-agent/tools-default/iostat
+      echo "" > /var/lib/pbench-agent/tools-default/mpstat
+      echo "" > /var/lib/pbench-agent/tools-default/perf
+      echo "" > /var/lib/pbench-agent/tools-default/pidstat
+      echo "" > /var/lib/pbench-agent/tools-default/sar
+      master_nodes=`oc get nodes -l pbench_agent=true,pbench_role=master --no-headers | awk '{print $1}'`
+      for node in $master_nodes; do
+        echo "master" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+      infra_nodes=`oc get nodes -l pbench_agent=true,pbench_role=infra --no-headers | awk '{print $1}'`
+      for node in $infra_nodes; do
+        echo "infra" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+      worker_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
+      for node in $worker_nodes; do
+        echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+      # FIO test expect storage backend - get label for these nodes too
+      storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
+      for node in $storage_nodes; do
+        echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+    fi
+    echo "$(date -u) Done configuring pbench for STRESS I/O scale test"
+    # End pbench Configuration
+    #
+    # Test Configuration
+    if [[ "${AZURE_AUTH}" == "true" ]]; then
+      export AZURE_AUTH_LOCATION=/tmp/azure_auth
+    fi
+    echo "$(date -u) Creating pods for STRESS I/O scale test - pods will be in namespace:" {{ stress_basename }}0
+    mkdir -p /tmp/snafu_results
+    export cluster_name={{ snafu_cluster_name }}
+    export test_user={{ snafu_user }}
+    export es={{ snafu_es_host }}
+    export es_port={{ snafu_es_port }}
+    export es_index={{ snafu_es_index_prefix }}
+
+    oc delete clusterrole/kube-stresscheck-psp || :
+    oc delete clusterrolebinding/kube-stresscheck-psp || :
+    oc delete psp/kube-stresscheck-psp || :
+    VIPERCONFIG=/root/workload/stresstest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
+
+    echo "$(date -u) Pods for STRESS I/O test created."
+
+    # wait until all pods are started and then collect data
+
+    while [[ $(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do
+      sleep 10
+      echo "Waiting on stress job to start..."
+    done
+
+
+    ## necessary for user diffrent than root
+    clients=`oc get pods --output=json -n {{ stress_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
+    touch /.ssh/config
+    mv /.ssh/config /.ssh/config.bak || true
+    for host in $(echo "${clients}" | sed "s/,/ /g");
+    do
+      HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
+    done
+    cat /.ssh/config.bak >> ~/.ssh/config || true
+    chmod 0600 /.ssh/config
+
+    kubectl logs -l name=stress -n {{ stress_basename }}0
+    while [[ $(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e ".status.succeeded=={{stress_completions}}") == "false" ]] ; do
+          sleep 10
+          echo "Fetching current completed ..."
+          current=$(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e ".status.succeeded")
+          echo "Waiting on stress job to finish - (${current}/{{ stress_completions }})"
+    done
+
+    if [[ {{ stress_cleanup }} == "true" ]]; then
+       oc delete project {{ stress_basename }}0
+       while [ "$(oc get project |grep {{ stress_basename }}0 | awk '{print $1}')" == {{ stress_basename }}0 ]; do
+         echo "waiting on project {{ stress_basename }}0 to disappear ..."
+         sleep 10
+       done
+       echo "Project {{ stress_basename }}0 is deleted ... test finished"
+    elif [[ {{ stress_cleanup }} == "false" ]]; then
+       echo "Test is done, but project {{ stress_basename }}0 is not be deleted due to STRESS_CLEANUP=false"
+    fi
+  stresstest.yml: |
+    provider: local
+    ClusterLoader:
+      projects:
+        - num: 1
+          basename: {{ stress_basename }}
+          ifexists: delete
+          nodeselector: "node-role.kubernetes.io/worker="
+          nodeselector: {{ stress_nodeselector }}
+          templates:
+            - num: 1
+              file: /root/workload/pbench-ssh.yaml
+              parameters:
+              - SSH_AUTHORIZED_KEYS: {{ stress_ssh_authorized_keys }}
+              - SSH_PRIVATE_KEY: {{ stress_ssh_private_key }}
+              - SSH_PUBLIC_KEY: {{ stress_ssh_public_key }}
+            - num: {{ stress_max_nodes }}
+              file: stresstemplate.yaml
+              parameters:
+              - STRESS_CONTAINER_IMAGE: {{ stress_container_image }}
+      tuningsets:
+        - name: default
+          pods:
+            stepping:
+              stepsize: {{ stress_stepsize }}
+              pause: {{ stress_pause }}
+            ratelimit:
+              delay: 0
+  stresstemplate.yaml: |
+    kind: Template
+    apiVersion: v1
+    metadata:
+      name: stress
+      annotations:
+        description: A template for creating an fio pod with PVC
+        tags: stress,perf
+    labels:
+      name: stresstest-test
+    objects:
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: kube-stresscheck-psp
+      rules:
+        - apiGroups:
+            - extensions
+          resources:
+            - podsecuritypolicies
+          verbs:
+            - use
+          resourceNames:
+            - kube-stresscheck-psp
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: kube-stresscheck-psp
+      subjects:
+        - kind: ServiceAccount
+          name: kube-stresscheck
+          namespace: {{ stress_basename }}${IDENTIFIER}
+      roleRef:
+        kind: ClusterRole
+        name: kube-stresscheck-psp
+        apiGroup: rbac.authorization.k8s.io
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: kube-stresscheck
+        namespace: {{ stress_basename }}${IDENTIFIER}
+    - apiVersion: policy/v1beta1
+      kind: PodSecurityPolicy
+      metadata:
+        name: kube-stresscheck-psp
+      spec:
+        allowPrivilegeEscalation: true
+        fsGroup:
+          rule: RunAsAny
+        privileged: true
+        runAsUser:
+          rule: RunAsAny
+        seLinux:
+          rule: RunAsAny
+        supplementalGroups:
+          rule: RunAsAny
+        volumes:
+          - 'secret'
+    - apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: scale-ci-stress
+        labels:
+          name: scale-ci-workload
+      spec:
+        parallelism: {{ stress_parallelism }}
+        completions: {{ stress_completions }}
+        backoffLimit: 0
+        selector:
+          name: stress
+        template:
+          metadata:
+            labels:
+              name: stress
+            name: stress
+          spec:
+            hostNetwork: false
+            restartPolicy: OnFailure
+            serviceAccountName: kube-stresscheck
+            affinity:
+              podAntiAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                  - weight: 100
+                    podAffinityTerm:
+                      labelSelector:
+                        matchExpressions:
+                          - key: app
+                            operator: In
+                            values:
+                              - stress
+                      topologyKey: "kubernetes.io/hostname"
+            containers:
+              - name: "stress"
+                image: "{{ stress_container_image }}"
+                imagePullPolicy: IfNotPresent
+                command: ["/stress-ng", "--daemon", "{{ stress_daemons }}", "--cpu", "{{ stress_cpu }}", "--cpu-load", "{{ stress_cpu_load }}", "--io", "{{ stress_io }}", "--vm", "{{ stress_mem }}", "--vm-bytes", "{{ stress_mem_bytes }}",
+                                           "--timeout", "{{ stress_runtime }}", "{{ stress_additional_args }}"]
+                securityContext: {}
+                volumeMounts:
+                  - name: pbench-ssh
+                    mountPath: /.ssh/authorized_keys
+                    subPath: authorized_keys
+                  - name: pbench-ssh
+                    mountPath: /root/.ssh/authorized_keys
+                    subPath: authorized_keys
+                  - name: pbench-results
+                    mountPath: /var/lib/pbench-agent
+            dnsPolicy: ClusterFirst
+            securityContext:
+              privileged: true
+            volumes:
+              - name: pbench-ssh
+                secret:
+                  secretName: pbench-ssh
+                  defaultMode: 0600
+              - name: pbench-results
+                emptyDir: {}
+    parameters:
+    - name: IDENTIFIER
+      description: Number to append to the name of resources
+      value: '1'
+    - name: STRESS_CONTAINER_IMAGE
+      description: Which stress container image to be used in this pod
+      value: "{{ stress_container_image }}"
+      required: true
+  pbench-ssh.yaml: |
+    kind: Template
+    apiVersion: v1
+    metadata:
+      name: sshSecretTemplate
+      creationTimestamp:
+      annotations:
+        description: Template to create ssh secret
+        tags: ''
+    objects:
+      - apiVersion: v1
+        kind: Secret
+        metadata:
+          name: pbench-ssh
+        type: Opaque
+        data:
+          authorized_keys: {{ stress_ssh_authorized_keys }}
+          id_rsa: {{ stress_ssh_private_key }}
+          id_rsa.pub: {{ stress_ssh_public_key }}
+    parameters:
+    - name: IDENTIFIER
+      description: Number to append to the name of resources
+      value: "1"
+      required: true
+    - name: SSH_AUTHORIZED_KEYS
+      description: Authorized key file encoded for a secret
+      required: true
+    - name: SSH_PRIVATE_KEY
+      description: SSH private key
+      required: true
+    - name: SSH_PUBLIC_KEY
+      description: SSH public key
+      required: true
+  ssh_config.template: |
+    Host ${HOST}
+    user default
+    port ${STRESS_SSH_PORT}
+    StrictHostKeyChecking no
+    PasswordAuthentication no
+    UserKnownHostsFile /dev/null
+    IdentityFile ~/.ssh/id_rsa
