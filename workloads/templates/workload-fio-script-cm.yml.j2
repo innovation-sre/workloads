@@ -95,7 +95,7 @@ data:
        done
        echo "Project {{ fiotest_basename }}0 is deleted ... test finished"
     elif [[ {{ fiotest_cleanup }} == "false" ]]; then
-       echo "Test is done, but project {{ fiotest_basename }}0 is not be deleted due to FIOTEST_CLAENUP=false"
+       echo "Test is done, but project {{ fiotest_basename }}0 is not be deleted due to FIOTEST_CLEANUP=false"
     fi
   fiotest.yml: |
     provider: local
