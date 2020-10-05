@@ -61,18 +61,14 @@ data:
     oc delete clusterrolebinding/kube-stresscheck-psp || :
     oc delete psp/kube-stresscheck-psp || :
     VIPERCONFIG=/root/workload/stresstest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
-
     echo "$(date -u) Pods for STRESS I/O test created."
-
     # wait until all pods are started and then collect data
-
     while [[ $(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do
       sleep 10
       echo "Waiting on stress job to start..."
     done
-
-
-    ## necessary for user diffrent than root
+    echo "$(date -u) Stress Job started."
+    ## necessary for user different than root
     clients=`oc get pods --output=json -n {{ stress_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
     touch /.ssh/config
     mv /.ssh/config /.ssh/config.bak || true
@@ -80,18 +76,21 @@ data:
     do
       HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
     done
-    cat /.ssh/config.bak >> ~/.ssh/config || true
-    chmod 0600 /.ssh/config
-
-    kubectl logs -l name=stress -n {{ stress_basename }}0
+    cat /.ssh/config.bak >> /.ssh/config || true
+    chmod 0600 /.ssh/config || true
+    echo "$(date -u) Done populating SSH config."
+    set +e
     while [[ $(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e ".status.succeeded=={{stress_completions}}") == "false" ]] ; do
-          sleep 10
-          echo "Fetching current completed ..."
+          echo "$(date -u) Job not finished. Fetching current completed ..."
+          sleep 20
+          ps aux
           current=$(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e ".status.succeeded")
-          echo "Waiting on stress job to finish - (${current}/{{ stress_completions }})"
+          [[ "$current" == "null" ]] && current=0
+          echo "$(date -u) Jobs Completed: $current/{{ stress_completions }}"
     done
-
+    set -e
     if [[ {{ stress_cleanup }} == "true" ]]; then
+       echo "$(date -u) Cleaning up"
        oc delete project {{ stress_basename }}0
        while [ "$(oc get project |grep {{ stress_basename }}0 | awk '{print $1}')" == {{ stress_basename }}0 ]; do
          echo "waiting on project {{ stress_basename }}0 to disappear ..."
@@ -101,6 +100,7 @@ data:
     elif [[ {{ stress_cleanup }} == "false" ]]; then
        echo "Test is done, but project {{ stress_basename }}0 is not be deleted due to STRESS_CLEANUP=false"
     fi
+    kubectl logs -l name=stress -n {{ stress_basename }}0
   stresstest.yml: |
     provider: local
     ClusterLoader:
