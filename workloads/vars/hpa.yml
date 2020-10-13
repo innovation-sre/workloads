@@ -1,0 +1,72 @@
+---
+###############################################################################
+# Ansible SSH variables.
+###############################################################################
+ansible_public_key_file: "{{ lookup('env', 'PUBLIC_KEY')|default('~/.ssh/id_rsa.pub', true) }}"
+ansible_private_key_file: "{{ lookup('env', 'PRIVATE_KEY')|default('~/.ssh/id_rsa', true) }}"
+
+orchestration_user: "{{ lookup('env', 'ORCHESTRATION_USER')|default('root', true) }}"
+###############################################################################
+# RHCOS fiotest workload variables.
+###############################################################################
+# snafu es variables
+snafu_es_host: "{{ lookup('env', 'ES_HOST')|default('', true) }}"
+snafu_es_port: "{{ lookup('env', 'ES_PORT')|default('', true) }}"
+snafu_es_index_prefix: "{{ lookup('env', 'ES_INDEX_PREFIX')|default('snafu', true) }}"
+snafu_cluster_name: "{{ lookup('env', 'SNAFU_CLUSTER_NAME')|default('', true) }}"
+snafu_user: "{{ lookup('env', 'SNAFU_USER')|default('scale-ci', true) }}"
+
+workload_image: "{{ lookup('env', 'WORKLOAD_IMAGE')|default('quay.io/openshift-scale/scale-ci-workload:master', true) }}"
+workload_job_node_selector: "{{ lookup('env', 'WORKLOAD_JOB_NODE_SELECTOR')|default('', true)|bool }}"
+workload_job_taint: "{{ lookup('env', 'WORKLOAD_JOB_TAINT')|default(true, true)|bool }}"
+workload_job_privileged: "{{ lookup('env', 'WORKLOAD_JOB_PRIVILEGED')|default(false, false)|bool }}"
+kubeconfig_file: "{{ lookup('env', 'KUBECONFIG_FILE')|default('~/.kube/config', true) }}"
+
+# pbench variables
+pbench_ssh_private_key_file: "{{ lookup('env', 'PBENCH_SSH_PRIVATE_KEY_FILE')|default('~/.ssh/id_rsa', true) }}"
+pbench_ssh_public_key_file: "{{ lookup('env', 'PBENCH_SSH_PUBLIC_KEY_FILE')|default('~/.ssh/id_rsa.pub', true) }}"
+enable_pbench_agents: "{{ lookup('env', 'ENABLE_PBENCH_AGENTS')|default(false, true)|bool }}"
+pbench_server: "{{ lookup('env', 'PBENCH_SERVER')|default('', true) }}"
+enable_pbench_copy: "{{ lookup('env', 'ENABLE_PBENCH_COPY')|default(true, true)|bool|lower }}"
+
+# Other variables for workload tests
+scale_ci_results_token: "{{ lookup('env', 'SCALE_CI_RESULTS_TOKEN')|default('', true) }}"
+job_completion_poll_attempts: "{{ lookup('env', 'JOB_COMPLETION_POLL_ATTEMPTS')|default(10000, true)|int }}"
+
+# hpa test workload specific parameters:
+hpa_deployment_replicas: "{{ lookup('env', 'HPA_DEPLOYMENT_REPLICAS')|default('2', true)| int }}"
+hpa_deployment_name: "{{ lookup('env', 'HPA_DEPLOYMENT_NAME')|default('scale-ci-hpa-deployment', true) }}"
+hpa_deployment_image: "{{ lookup('env', 'HPA_DEPLOYMENT_NAME')|default('k8s.gcr.io/hpa-example', true) }}"
+hpa_deployment_resource_limit: "{{ lookup('env', 'HPA_DEPLOYMENT_RESOURCE_LIMIT')|default('500m', true) }}"
+hpa_deployment_resource_request: "{{ lookup('env', 'HPA_DEPLOYMENT_RESOURCE_REQUEST')|default('200m', true) }}"
+
+hpa_cpu_percent: "{{ lookup('env', 'HPA_CPU_PERCENT')|default(50, true)|int }}"
+hpa_min_replicas: "{{ lookup('env', 'HPA_MIN_REPLICAS')|default(2, true)|int }}"
+hpa_max_replicas: "{{ lookup('env', 'HPA_MAX_REPLICAS')|default(10, true)|int }}"
+
+hpa_traffic_loader_deployment_count: "{{ lookup('env', 'HPA_TRAFFIC_LOADER_COUNT')|default(10, true)|int }}"
+hpa_traffic_loader_deployment_image: "{{ lookup('env', 'HPA_TRAFFIC_LOADER_IMAGE')|default('busybox', true) }}"
+
+hpa_namespace: "{{ lookup('env', 'HPA_NAMESPACE')|default('scale-ci-tooling', true) }}"
+hpa_sleep_time: "{{ lookup('env', 'HPA_SLEEP_TIME')|default(5, true)|int }}"
+hpa_retries: "{{ lookup('env', 'HPA_RETRIES')|default(200, true)|int }}"
+
+hpa_prefix: "{{ lookup('env', 'HPA_PREFIX')|default('hpatest', true) }}"
+hpa_cleanup: "{{ lookup('env', 'HPA_CLEANUP')|default(true, true)|bool|lower }}"
+hpa_basename: "{{ lookup('env', 'HPA_BASENAME')|default('hpatest', true) }}"
+
+hpa_parallelism: "{{ lookup('env', 'HPA_PARALLELISM')|default(6, true)|int }}"
+hpa_completions: "{{ lookup('env', 'HPA_COMPLETIONS')|default(24, true)|int }}"
+hpa_runtime: "{{ lookup('env', 'HPA_RUNTIME')|default('60s', true) }}"
+hpa_nodeselector: "{{ lookup('env', 'HPA_NODESELECTOR')|default('', true) }}"
+hpa_ssh_port: "{{ lookup('env', 'HPA_SSH_PORT')|default(2022, true)|int }}"
+hpa_description: "{{lookup('env', 'HPA_DESCRIPTION')|default('', true) }}"
+hpa_ssh_authorized_keys: "{{pbench_ssh_public_key_file_slurp['content']}}"
+hpa_ssh_private_key: "{{pbench_ssh_private_key_file_slurp['content']}}"
+hpa_ssh_public_key: "{{pbench_ssh_public_key_file_slurp['content']}}"
+ocp_cluster_environment: "{{ lookup('env', 'OCP_CLUSTER_ENV')|default('ibm_cloud', true) }}"
+ibm_cloud_storage_billing: "{{ lookup('env', 'IBM_CLOUD_STORAGE_BILLING')|default('hourly', true) }}"
+ibm_cloud_storage_region: "{{ lookup('env', 'IBM_CLOUD_STORAGE_REGION')|default('us-south', true) }}"
+ibm_cloud_storage_zone: "{{ lookup('env', 'IBM_CLOUD_STORAGE_ZONE')|default('dal13', true) }}"
+azure_auth: "{{ lookup('env', 'AZURE_AUTH')|default(false, true)|bool|lower }}"
+azure_auth_file: "{{ lookup('env', 'AZURE_AUTH_FILE')|default('', true) }}"

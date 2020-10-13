@@ -1,0 +1,319 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scale-ci-workload-script
+data:
+  run.sh: |
+    #!/usr/bin/env bash
+    set -eo pipefail
+    # pbench Configuration
+    echo "$(date -u) Configuring pbench for FIO I/O scale test"
+    mkdir -p /var/lib/pbench-agent/tools-default/
+    echo "${USER_NAME:-default}:x:$(id -u):0:${USER_NAME:-default} user:${HOME}:/sbin/nologin" >> /etc/passwd
+    echo "" > /var/lib/pbench-agent/tools-default/oc
+    echo "workload" > /var/lib/pbench-agent/tools-default/label
+    source /opt/pbench-agent/profile
+    if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
+      # clear tools/remotes to make sure there are no invalid remotes
+      set +eo pipefail
+      pbench-clear-tools
+      set -eo pipefail
+      echo "" > /var/lib/pbench-agent/tools-default/disk
+      echo "" > /var/lib/pbench-agent/tools-default/iostat
+      echo "" > /var/lib/pbench-agent/tools-default/mpstat
+      echo "" > /var/lib/pbench-agent/tools-default/perf
+      echo "" > /var/lib/pbench-agent/tools-default/pidstat
+      echo "" > /var/lib/pbench-agent/tools-default/sar
+      master_nodes=`oc get nodes -l pbench_agent=true,pbench_role=master --no-headers | awk '{print $1}'`
+      for node in $master_nodes; do
+        echo "master" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+      infra_nodes=`oc get nodes -l pbench_agent=true,pbench_role=infra --no-headers | awk '{print $1}'`
+      for node in $infra_nodes; do
+        echo "infra" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+      worker_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
+      for node in $worker_nodes; do
+        echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+      # FIO test expect storage backend - get label for these nodes too
+      storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
+      for node in $storage_nodes; do
+        echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
+      done
+    fi
+    echo "$(date -u) Done configuring pbench for STRESS I/O scale test"
+    # End pbench Configuration
+    #
+    # Test Configuration
+    if [[ "${AZURE_AUTH}" == "true" ]]; then
+      export AZURE_AUTH_LOCATION=/tmp/azure_auth
+    fi
+    echo "$(date -u) Creating pods for STRESS I/O scale test - pods will be in namespace:" {{ hpa_basename }}0
+    mkdir -p /tmp/snafu_results
+    export cluster_name={{ snafu_cluster_name }}
+    export test_user={{ snafu_user }}
+    export es={{ snafu_es_host }}
+    export es_port={{ snafu_es_port }}
+    export es_index={{ snafu_es_index_prefix }}
+    oc delete clusterrole/kube-stresscheck-psp || :
+    oc delete clusterrolebinding/kube-stresscheck-psp || :
+    oc delete psp/kube-stresscheck-psp || :
+    VIPERCONFIG=/root/workload/hpatest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
+    echo "$(date -u) Pods for STRESS I/O test created."
+    # wait until all pods are started and then collect data
+    while [[ $(oc get job -n {{ hpa_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do
+      sleep 10
+      echo "Waiting on stress job to start..."
+    done
+    echo "$(date -u) Stress Job started."
+    ## necessary for user different than root
+    clients=`oc get pods --output=json -n {{ hpa_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
+    touch /.ssh/config
+    mv /.ssh/config /.ssh/config.bak || true
+    for host in $(echo "${clients}" | sed "s/,/ /g");
+    do
+      HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
+    done
+    cat /.ssh/config.bak >> /.ssh/config || true
+    chmod 0600 /.ssh/config || true
+    echo "$(date -u) Done populating SSH config."
+    set +e
+    
+    # HPA checks
+    # template vars
+    deployment='scale-ci-hpa-deployment'
+    deploymentReplicas=$(oc get deploy ${deployment} -o json|jq '.spec.replicas')
+    retries={{ hpa_retries }}
+    sleepTime={{ hpa_sleep_time }}
+    namespace={{ hpa_namespace }}
+    hpa_resource="scale-ci-hpa-deployment" 
+    counter=0
+    status="fail"
+    
+    # Check HPA scalability
+    while [ $counter -le $retries ]
+    do
+        ((counter++))
+        maxreplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.maxReplicas')
+        currentReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.status.currentReplicas')
+        if [ $currentReplicas -eq $maxreplicas ]; then
+            echo -e "nDone: Horizontal pod autoscaling job completed"
+            $status="pass"
+            break
+        else
+            echo -e "\nCurrent replicas: ${currentReplicas}"
+            echo -e "Desired/Max replicas: ${maxreplicas}"
+            echo -e "Retrying ${counter}, Sleeping for ${sleepTime} sec"
+        fi
+        sleep $sleepTime
+    done
+    
+    #
+    minReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.minReplicas')
+    currentReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.status.currentReplicas')
+    desiredReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.status.desiredReplicas')
+    if [ $currentReplicas -gt $minReplicas ]; then
+        echo -e "\nHorizontal pod auto scalability test timeout"
+        echo -e "Current replicas: ${currentReplicas}"
+        echo -e "Desired/Max replicas: ${maxreplicas}"
+        $status="pass"
+    fi
+    
+    hpa_cleanup={{ hpa_cleanup }}
+    # cleanup hpa resources
+    if [ ${hpa_cleanup} == 'true' ]; then
+        # review and use as template vars
+        oc delete -n ${namespace} deploy scale-ci-hpa-traffic-loader-deployment
+        oc delete -n ${namespace} deploy scale-ci-hpa-deployment
+        oc delete -n ${namespace} svc hpa-web-php-apache-service
+        oc delete -n ${namespace} configmap hpa-http-stress-script
+        oc delete -n ${namespace} hpa scale-ci-hpa-deployment
+    fi
+    
+    echo -e "\nEnd of script"
+    if [ ${status} == 'pass' ]; then
+        exit 0
+    else
+        exit 1
+    fi
+    # end of script
+    
+
+    #kubectl logs -l name=stress -n {{ stress_basename }}0
+  hpatest.yml: |
+    provider: local
+    ClusterLoader:
+      projects:
+        - num: 1
+          basename: {{ hpa_basename }}
+          ifexists: delete
+          nodeselector: "node-role.kubernetes.io/worker="
+          nodeselector: {{ hpa_nodeselector }}
+          templates:
+            - num: 1
+              file: /root/workload/pbench-ssh.yaml
+              parameters:
+              - SSH_AUTHORIZED_KEYS: {{ hpa_ssh_authorized_keys }}
+              - SSH_PRIVATE_KEY: {{ hpa_ssh_private_key }}
+              - SSH_PUBLIC_KEY: {{ hpa_ssh_public_key }}
+            - num: {{ hpa_max_nodes }}
+              file: hpa_template.yaml
+              parameters:
+              - STRESS_CONTAINER_IMAGE: {{ hpa_container_image }}
+      tuningsets:
+        - name: default
+          pods:
+            stepping:
+              stepsize: {{ hpa_stepsize }}
+              pause: {{ hpa_pause }}
+            ratelimit:
+              delay: 0
+  hpa_template.yaml: |
+    apiVersion: v1
+    kind: Template
+    metadata:
+      name: scale-ci-hpa-template
+      annotations:
+        description: A template for creating deployments and horizontal pod autoscaler
+        tags: stress,hpa,http
+    parameters:
+    - name: IDENTIFIER
+      description: HPA - horizontal pod autoscaler
+      value: '1'
+    labels:
+        name: scale-ci-hpa-template
+    objects:
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: scale-ci-workload-script
+      data:
+        hpa_script.sh: |
+            #!/usr/bin/env bash
+            while true
+            do
+                RESPONSE=$(wget -q -O- http://hpa-web-php-apache-service)
+                echo ${RESPONSE}
+            done
+    
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: {{ hpa_deployment_name }}
+      spec:
+        selector:
+          matchLabels:
+            app: hpa-web-php-apache
+        replicas: {{ hpa_deployment_replicas }}
+        template:
+          metadata:
+            labels:
+              app: hpa-web-php-apache
+          spec:
+            containers:
+            - name: hpa-php-apache-web
+              image: {{ hpa_deployment_image }}
+              ports:
+              - containerPort: 80
+              resources:
+                limits:
+                  cpu: {{ hpa_deployment_resource_limit }}
+                requests:
+                  cpu: {{ hpa_deployment_resource_request }}
+    
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        name: hpa-web-php-apache-service
+      labels:
+        app: hpa-web-php-apache
+      spec:
+       type: ClusterIP
+       ports:
+       - port: 80
+         targetPort: 80
+       selector:
+         app: hpa-web-php-apache
+    
+    - apiVersion: autoscaling/v1
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: scale-ci-hpa-deployment
+      spec:
+        maxReplicas: {{ hpa_max_replicas }}
+        minReplicas: {{ hpa_min_replicas }}
+        scaleTargetRef:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: scale-ci-hpa-deployment
+        targetCPUUtilizationPercentage: {{ hpa_cpu_percent }}
+    
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: scale-ci-hpa-traffic-loader-deployment
+      spec:
+        selector:
+          matchLabels:
+            app: hpa-traffic-loader
+        replicas: {{ hpa_traffic_loader_deployment_count }}
+        template:
+          metadata:
+            labels:
+              app: hpa-traffic-loader
+          spec:
+            containers:
+            - name: scale-ci-traffic-loader
+              image: {{ hpa_traffic_loader_deployment_image }}
+              command: ["/bin/sh"]
+              args: ["/app/root/hpa_script.sh"]
+              volumeMounts:
+              - name: hpa-workload-http-traffic-script
+                mountPath: /app/root
+            volumes:
+            - name: hpa-workload-http-traffic-script
+              configMap:
+                name: scale-ci-workload-script
+                defaultMode: 0744
+  pbench-ssh.yaml: |
+    kind: Template
+    apiVersion: v1
+    metadata:
+      name: sshSecretTemplate
+      creationTimestamp:
+      annotations:
+        description: Template to create ssh secret
+        tags: ''
+    objects:
+      - apiVersion: v1
+        kind: Secret
+        metadata:
+          name: pbench-ssh
+        type: Opaque
+        data:
+          authorized_keys: {{ stress_ssh_authorized_keys }}
+          id_rsa: {{ stress_ssh_private_key }}
+          id_rsa.pub: {{ stress_ssh_public_key }}
+    parameters:
+    - name: IDENTIFIER
+      description: Number to append to the name of resources
+      value: "1"
+      required: true
+    - name: SSH_AUTHORIZED_KEYS
+      description: Authorized key file encoded for a secret
+      required: true
+    - name: SSH_PRIVATE_KEY
+      description: SSH private key
+      required: true
+    - name: SSH_PUBLIC_KEY
+      description: SSH public key
+      required: true
+  ssh_config.template: |
+    Host ${HOST}
+    user default
+    port ${STRESS_SSH_PORT}
+    StrictHostKeyChecking no
+    PasswordAuthentication no
+    UserKnownHostsFile /dev/null
+    IdentityFile ~/.ssh/id_rsa
