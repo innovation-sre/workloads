@@ -209,9 +209,8 @@ data:
               app: hpa-web-php-apache
           spec:
             securityContext:
-              privileged: true
-              runAsUser: 0
-              runAsGroup: 0
+              capabilities:
+                add: ["CAP_NET_BIND_SERVICE"]  
             containers:
             - name: hpa-php-apache-web
               image: {{ hpa_deployment_image }}
