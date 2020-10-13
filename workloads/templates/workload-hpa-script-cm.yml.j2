@@ -210,6 +210,8 @@ data:
           spec:
             securityContext:
               privileged: true
+              runAsUser: 0
+              runAsGroup: 0
             containers:
             - name: hpa-php-apache-web
               image: {{ hpa_deployment_image }}
