@@ -139,8 +139,7 @@ data:
     fi
     # end of script
     
-
-    #kubectl logs -l name=stress -n {{ stress_basename }}0
+    #kubectl logs -l name=stress -n {{ hpa_basename }}0
   hpatest.yml: |
     provider: local
     ClusterLoader:
@@ -159,8 +158,6 @@ data:
               - SSH_PUBLIC_KEY: {{ hpa_ssh_public_key }}
             - num: {{ hpa_max_nodes }}
               file: hpa_template.yaml
-              parameters:
-              - STRESS_CONTAINER_IMAGE: {{ hpa_container_image }}
       tuningsets:
         - name: default
           pods:
@@ -211,6 +208,8 @@ data:
             labels:
               app: hpa-web-php-apache
           spec:
+            securityContext:
+              privileged: true
             containers:
             - name: hpa-php-apache-web
               image: {{ hpa_deployment_image }}
