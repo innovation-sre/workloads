@@ -14,33 +14,33 @@ data:
     #echo "workload" > /var/lib/pbench-agent/tools-default/label
     #source /opt/pbench-agent/profile
     #if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
-      # clear tools/remotes to make sure there are no invalid remotes
-      set +eo pipefail
-      pbench-clear-tools
-      set -eo pipefail
-      echo "" > /var/lib/pbench-agent/tools-default/disk
-      echo "" > /var/lib/pbench-agent/tools-default/iostat
-      echo "" > /var/lib/pbench-agent/tools-default/mpstat
-      echo "" > /var/lib/pbench-agent/tools-default/perf
-      echo "" > /var/lib/pbench-agent/tools-default/pidstat
-      echo "" > /var/lib/pbench-agent/tools-default/sar
-      master_nodes=`oc get nodes -l pbench_agent=true,pbench_role=master --no-headers | awk '{print $1}'`
-      for node in $master_nodes; do
-        echo "master" > /var/lib/pbench-agent/tools-default/remote@$node
-      done
-      infra_nodes=`oc get nodes -l pbench_agent=true,pbench_role=infra --no-headers | awk '{print $1}'`
-      for node in $infra_nodes; do
-        echo "infra" > /var/lib/pbench-agent/tools-default/remote@$node
-      done
-      worker_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
-      for node in $worker_nodes; do
-        echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
-      done
-      # FIO test expect storage backend - get label for these nodes too
-      storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
-      for node in $storage_nodes; do
-        echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
-      done
+    # # clear tools/remotes to make sure there are no invalid remotes
+    # set +eo pipefail
+    # pbench-clear-tools
+    # set -eo pipefail
+    # echo "" > /var/lib/pbench-agent/tools-default/disk
+    # echo "" > /var/lib/pbench-agent/tools-default/iostat
+    # echo "" > /var/lib/pbench-agent/tools-default/mpstat
+    # echo "" > /var/lib/pbench-agent/tools-default/perf
+    # echo "" > /var/lib/pbench-agent/tools-default/pidstat
+    # echo "" > /var/lib/pbench-agent/tools-default/sar
+    # master_nodes=`oc get nodes -l pbench_agent=true,pbench_role=master --no-headers | awk '{print $1}'`
+    # for node in $master_nodes; do
+    #   echo "master" > /var/lib/pbench-agent/tools-default/remote@$node
+    # done
+    # infra_nodes=`oc get nodes -l pbench_agent=true,pbench_role=infra --no-headers | awk '{print $1}'`
+    # for node in $infra_nodes; do
+    #   echo "infra" > /var/lib/pbench-agent/tools-default/remote@$node
+    # done
+    # worker_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
+    # for node in $worker_nodes; do
+    #   echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
+    # done
+    # # FIO test expect storage backend - get label for these nodes too
+    # storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
+    # for node in $storage_nodes; do
+    #   echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
+    # done
     #fi
     #echo "$(date -u) Done configuring pbench for STRESS I/O scale test"
     ## End pbench Configuration
