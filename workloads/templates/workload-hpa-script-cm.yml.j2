@@ -208,6 +208,7 @@ data:
             labels:
               app: hpa-web-php-apache
           spec:
+            serviceAccountName: anyuid
             securityContext:
               capabilities:
                 add: ["CAP_NET_BIND_SERVICE"]  
