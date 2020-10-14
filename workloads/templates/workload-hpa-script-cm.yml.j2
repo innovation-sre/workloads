@@ -61,33 +61,34 @@ data:
     #oc delete psp/kube-stresscheck-psp || :
     VIPERCONFIG=/root/workload/hpatest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
     oc adm policy add-scc-to-user anyuid -n hpatest0 default
-    echo "$(date -u) Pods for STRESS I/O test created."
+    echo "$(date -u) Pods for HPA test created."
     # wait until all pods are started and then collect data
-    while [[ $(oc get job -n {{ hpa_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do
+    while [[ $(oc get job -n scale-ci-tooling scale-ci-hpa -o json | jq -e '.status.active==1') == "true"  ]] ; do
       sleep 10
       echo "Waiting on hpa job to start..."
     done
-    echo "$(date -u) Stress Job started."
+    echo "$(date -u) HPA Job started."
     ## necessary for user different than root
-    clients=`oc get pods --output=json -n {{ hpa_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
-    touch /.ssh/config
-    mv /.ssh/config /.ssh/config.bak || true
-    for host in $(echo "${clients}" | sed "s/,/ /g");
-    do
-      HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
-    done
-    cat /.ssh/config.bak >> /.ssh/config || true
-    chmod 0600 /.ssh/config || true
-    echo "$(date -u) Done populating SSH config."
+    #clients=`oc get pods --output=json -n {{ hpa_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
+    #touch /.ssh/config
+    #mv /.ssh/config /.ssh/config.bak || true
+    #for host in $(echo "${clients}" | sed "s/,/ /g");
+    #do
+    #  HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
+    #done
+    #cat /.ssh/config.bak >> /.ssh/config || true
+    #chmod 0600 /.ssh/config || true
+    #echo "$(date -u) Done populating SSH config."
     set +e
     
     # HPA checks
     # template vars
     deployment='scale-ci-hpa-deployment'
-    deploymentReplicas=$(oc get deploy ${deployment} -o json|jq '.spec.replicas')
+    deploymentReplicas=$(oc get deploy ${deployment} -n hpatest0 -o json|jq '.spec.replicas')
     retries={{ hpa_retries }}
     sleepTime={{ hpa_sleep_time }}
-    namespace={{ hpa_namespace }}
+    #namespace={{ hpa_namespace }}
+    namespace="hpatest0"
     hpa_resource="scale-ci-hpa-deployment" 
     counter=0
     status="fail"
