@@ -60,7 +60,6 @@ data:
     #oc delete clusterrolebinding/kube-stresscheck-psp || :
     #oc delete psp/kube-stresscheck-psp || :
     VIPERCONFIG=/root/workload/hpatest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
-    oc adm policy add-scc-to-user anyuid -n hpatest0 default
     echo "$(date -u) Pods for STRESS I/O test created."
     # wait until all pods are started and then collect data
     while [[ $(oc get job -n {{ hpa_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do
@@ -209,14 +208,14 @@ data:
             labels:
               app: hpa-web-php-apache
           spec:
-            #serviceAccountName: hpa-sa
-            securityContext:
-              runAsUser: 0
+            serviceAccountName: hpa-sa
             containers:
             - name: hpa-php-apache-web
               image: {{ hpa_deployment_image }}
               ports:
               - containerPort: 80
+              securityContext:
+                privileged: true
               resources:
                 limits:
                   cpu: {{ hpa_deployment_resource_limit }}
@@ -318,9 +317,6 @@ data:
         privileged: true
         runAsUser:
          rule: 'RunAsAny'
-         ranges:
-          - min: 0
-            max: 10000000
         supplementalGroups:
           rule: 'RunAsAny'
         fsGroup:
