@@ -193,35 +193,6 @@ data:
                 RESPONSE=$(wget -q -O- http://hpa-web-php-apache-service)
                 echo ${RESPONSE}
             done
-    
-    - apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: {{ hpa_deployment_name }}
-      spec:
-        selector:
-          matchLabels:
-            app: hpa-web-php-apache
-        replicas: {{ hpa_deployment_replicas }}
-        template:
-          metadata:
-            labels:
-              app: hpa-web-php-apache
-          spec:
-            serviceAccountName: hpa-sa
-            containers:
-            - name: hpa-php-apache-web
-              image: {{ hpa_deployment_image }}
-              ports:
-              - containerPort: 80
-              securityContext:
-                privileged: true
-              resources:
-                limits:
-                  cpu: {{ hpa_deployment_resource_limit }}
-                requests:
-                  cpu: {{ hpa_deployment_resource_request }}
-    
     - apiVersion: v1
       kind: Service
       metadata:
@@ -327,6 +298,33 @@ data:
           - configMap
           - emptyDir
           - secret
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: {{ hpa_deployment_name }}
+      spec:
+        selector:
+          matchLabels:
+            app: hpa-web-php-apache
+        replicas: {{ hpa_deployment_replicas }}
+        template:
+          metadata:
+            labels:
+              app: hpa-web-php-apache
+          spec:
+            serviceAccountName: hpa-sa
+            containers:
+            - name: hpa-php-apache-web
+              image: {{ hpa_deployment_image }}
+              ports:
+              - containerPort: 80
+              securityContext:
+                privileged: true
+              resources:
+                limits:
+                  cpu: {{ hpa_deployment_resource_limit }}
+                requests:
+                  cpu: {{ hpa_deployment_resource_request }} 
   pbench-ssh.yaml: |
     kind: Template
     apiVersion: v1
