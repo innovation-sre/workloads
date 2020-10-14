@@ -5,15 +5,15 @@ metadata:
 data:
   run.sh: |
     #!/usr/bin/env bash
-    set -eo pipefail
-    # pbench Configuration
-    echo "$(date -u) Configuring pbench for FIO I/O scale test"
-    mkdir -p /var/lib/pbench-agent/tools-default/
-    echo "${USER_NAME:-default}:x:$(id -u):0:${USER_NAME:-default} user:${HOME}:/sbin/nologin" >> /etc/passwd
-    echo "" > /var/lib/pbench-agent/tools-default/oc
-    echo "workload" > /var/lib/pbench-agent/tools-default/label
-    source /opt/pbench-agent/profile
-    if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
+    #set -eo pipefail
+    ## pbench Configuration
+    #echo "$(date -u) Configuring pbench for FIO I/O scale test"
+    #mkdir -p /var/lib/pbench-agent/tools-default/
+    #echo "${USER_NAME:-default}:x:$(id -u):0:${USER_NAME:-default} user:${HOME}:/sbin/nologin" >> /etc/passwd
+    #echo "" > /var/lib/pbench-agent/tools-default/oc
+    #echo "workload" > /var/lib/pbench-agent/tools-default/label
+    #source /opt/pbench-agent/profile
+    #if [ "${ENABLE_PBENCH_AGENTS}" = true ]; then
       # clear tools/remotes to make sure there are no invalid remotes
       set +eo pipefail
       pbench-clear-tools
@@ -41,30 +41,30 @@ data:
       for node in $storage_nodes; do
         echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
       done
-    fi
-    echo "$(date -u) Done configuring pbench for STRESS I/O scale test"
-    # End pbench Configuration
-    #
-    # Test Configuration
-    if [[ "${AZURE_AUTH}" == "true" ]]; then
+    #fi
+    #echo "$(date -u) Done configuring pbench for STRESS I/O scale test"
+    ## End pbench Configuration
+    ##
+    ## Test Configuration
+    #if [[ "${AZURE_AUTH}" == "true" ]]; then
       export AZURE_AUTH_LOCATION=/tmp/azure_auth
-    fi
-    echo "$(date -u) Creating pods for STRESS I/O scale test - pods will be in namespace:" {{ hpa_basename }}0
-    mkdir -p /tmp/snafu_results
-    export cluster_name={{ snafu_cluster_name }}
-    export test_user={{ snafu_user }}
-    export es={{ snafu_es_host }}
-    export es_port={{ snafu_es_port }}
-    export es_index={{ snafu_es_index_prefix }}
-    oc delete clusterrole/kube-stresscheck-psp || :
-    oc delete clusterrolebinding/kube-stresscheck-psp || :
-    oc delete psp/kube-stresscheck-psp || :
+    #fi
+    #echo "$(date -u) Creating pods for STRESS I/O scale test - pods will be in namespace:" {{ hpa_basename }}0
+    #mkdir -p /tmp/snafu_results
+    #export cluster_name={{ snafu_cluster_name }}
+    #export test_user={{ snafu_user }}
+    #export es={{ snafu_es_host }}
+    #export es_port={{ snafu_es_port }}
+    #export es_index={{ snafu_es_index_prefix }}
+    #oc delete clusterrole/kube-stresscheck-psp || :
+    #oc delete clusterrolebinding/kube-stresscheck-psp || :
+    #oc delete psp/kube-stresscheck-psp || :
     VIPERCONFIG=/root/workload/hpatest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
     echo "$(date -u) Pods for STRESS I/O test created."
     # wait until all pods are started and then collect data
     while [[ $(oc get job -n {{ hpa_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do
       sleep 10
-      echo "Waiting on stress job to start..."
+      echo "Waiting on hpa job to start..."
     done
     echo "$(date -u) Stress Job started."
     ## necessary for user different than root
@@ -208,10 +208,7 @@ data:
             labels:
               app: hpa-web-php-apache
           spec:
-            serviceAccountName: anyuid
-            securityContext:
-              capabilities:
-                add: ["CAP_NET_BIND_SERVICE"]  
+            serviceAccountName: hpa-sa
             containers:
             - name: hpa-php-apache-web
               image: {{ hpa_deployment_image }}
@@ -277,6 +274,57 @@ data:
               configMap:
                 name: scale-ci-workload-script
                 defaultMode: 0744
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: hpa-sa
+        namespace: {{ hpa_basename }}${IDENTIFIER}
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: hpa-role
+        namespace: {{ hpa_basename }}${IDENTIFIER}
+      rules:
+      - apiGroups:
+          - policy
+          - extensions
+        resources:
+          - podsecuritypolicies
+        verbs:
+          - use
+        resourceNames:
+            - hpa-psp
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: hpa-role-binding
+        namespace: {{ hpa_basename }}${IDENTIFIER}
+      subjects:
+        - kind: ServiceAccount
+          name: hpa-sa
+          namespace: {{ hpa_basename }}${IDENTIFIER}
+      roleRef:
+        kind: Role
+        name: hpa-role
+        apiGroup: rbac.authorization.k8s.io
+    - apiVersion: policy/v1beta1
+      kind: PodSecurityPolicy
+      metadata:
+        name: hpa-psp
+      spec:
+        privileged: true
+        runAsUser:
+         rule: 'RunAsAny'
+        supplementalGroups:
+          rule: 'RunAsAny'
+        fsGroup:
+          rule: 'RunAsAny'
+        seLinux:
+          rule: 'RunAsAny'
+        volumes:
+          - configMap
+          - emptyDir
+          - secret
   pbench-ssh.yaml: |
     kind: Template
     apiVersion: v1
