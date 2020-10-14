@@ -318,8 +318,6 @@ data:
               image: {{ hpa_deployment_image }}
               ports:
               - containerPort: 80
-              securityContext:
-                privileged: true
               resources:
                 limits:
                   cpu: {{ hpa_deployment_resource_limit }}
