@@ -209,6 +209,8 @@ data:
               app: hpa-web-php-apache
           spec:
             serviceAccountName: hpa-sa
+            securityContext:
+              runAsUser: 0
             containers:
             - name: hpa-php-apache-web
               image: {{ hpa_deployment_image }}
@@ -315,6 +317,9 @@ data:
         privileged: true
         runAsUser:
          rule: 'RunAsAny'
+         ranges:
+          - min: 0
+            max: 10000000
         supplementalGroups:
           rule: 'RunAsAny'
         fsGroup:
