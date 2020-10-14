@@ -63,10 +63,10 @@ data:
     oc adm policy add-scc-to-user anyuid -n hpatest0 default
     echo "$(date -u) Pods for HPA test created."
     # wait until all pods are started and then collect data
-    while [[ $(oc get job -n scale-ci-tooling scale-ci-hpa -o json | jq -e '.status.active==1') == "true"  ]] ; do
-      sleep 10
-      echo "Waiting on hpa job to start..."
-    done
+    #while [[ $(oc get job -n scale-ci-tooling scale-ci-hpa -o json | jq -e '.status.active==1') == "true"  ]] ; do
+    #  sleep 10
+    #  echo "Waiting on hpa job to start..."
+    #done
     echo "$(date -u) HPA Job started."
     ## necessary for user different than root
     #clients=`oc get pods --output=json -n {{ hpa_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
