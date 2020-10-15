@@ -89,9 +89,9 @@ data:
     sleepTime={{ hpa_sleep_time }}
     #namespace={{ hpa_namespace }}
     namespace="hpatest0"
-    hpa_resource="scale-ci-hpa-deployment" 
+    hpa_resource="scale-ci-hpa-deployment"
     counter=0
-    status="fail"
+    status=2
     
     # Check HPA scalability
     while [ $counter -le $retries ]
@@ -100,48 +100,51 @@ data:
         maxreplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.maxReplicas')
         currentReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.status.currentReplicas')
         if [ $currentReplicas -eq $maxreplicas ]; then
-            echo -e "nDone: Horizontal pod autoscaling job completed"
-            $status="pass"
+            status=0
             break
         else
-            echo -e "\nCurrent replicas: ${currentReplicas}"
+            echo -e "Current replicas: ${currentReplicas}"
             echo -e "Desired/Max replicas: ${maxreplicas}"
             echo -e "Retrying ${counter}, Sleeping for ${sleepTime} sec"
         fi
         sleep $sleepTime
     done
     
-    #
+    maxreplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.maxReplicas')
     minReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.minReplicas')
     currentReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.status.currentReplicas')
     desiredReplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.status.desiredReplicas')
+
+    # check if pods were scaled at all
     if [ $currentReplicas -gt $minReplicas ]; then
-        echo -e "\nHorizontal pod auto scalability test timeout"
-        echo -e "Current replicas: ${currentReplicas}"
-        echo -e "Desired/Max replicas: ${maxreplicas}"
-        $status="pass"
+        status=1
     fi
     
-    hpa_cleanup={{ hpa_cleanup }}
     # cleanup hpa resources
+    hpa_cleanup={{ hpa_cleanup }}
     if [ ${hpa_cleanup} == 'true' ]; then
-        # review and use as template vars
         oc delete -n ${namespace} deploy scale-ci-hpa-traffic-loader-deployment
         oc delete -n ${namespace} deploy scale-ci-hpa-deployment
         oc delete -n ${namespace} svc hpa-web-php-apache-service
-        oc delete -n ${namespace} configmap hpa-http-stress-script
+        oc delete -n ${namespace} configmap scale-ci-workload-script
         oc delete -n ${namespace} hpa scale-ci-hpa-deployment
     fi
     
-    echo -e "\nEnd of script"
-    if [ ${status} == 'pass' ]; then
-        exit 0
+    # Exit job with status code
+    if [ ${status} -eq "0" ]; then
+      echo -e "Horizontal pod autoscaling job completed"
+      exit 0
+    elif [ ${status} -eq "1" ]; then
+      echo -e "Horizontal pod autoscaling job completed"
+      echo -e "Current replicas: ${currentReplicas}"
+      echo -e "Desired/Max replicas: ${maxreplicas}"
+      exit 0
     else
-        exit 1
+      echo -e "Horizontal pod autoscaling failed"
+      exit 1
     fi
     # end of script
-    
-    #kubectl logs -l name=stress -n {{ hpa_basename }}0
+    echo -e "\nEnd of script"
   hpatest.yml: |
     provider: local
     ClusterLoader:
