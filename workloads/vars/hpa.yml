@@ -36,7 +36,7 @@ job_completion_poll_attempts: "{{ lookup('env', 'JOB_COMPLETION_POLL_ATTEMPTS')|
 # hpa test workload specific parameters:
 hpa_deployment_replicas: "{{ lookup('env', 'HPA_DEPLOYMENT_REPLICAS')|default('2', true)| int }}"
 hpa_deployment_name: "{{ lookup('env', 'HPA_DEPLOYMENT_NAME')|default('scale-ci-hpa-deployment', true) }}"
-hpa_deployment_image: "{{ lookup('env', 'HPA_DEPLOYMENT_NAME')|default('k8s.gcr.io/hpa-example', true) }}"
+hpa_deployment_image: "{{ lookup('env', 'HPA_DEPLOYMENT_IMAGE')|default('k8s.gcr.io/hpa-example', true) }}"
 hpa_deployment_resource_limit: "{{ lookup('env', 'HPA_DEPLOYMENT_RESOURCE_LIMIT')|default('500m', true) }}"
 hpa_deployment_resource_request: "{{ lookup('env', 'HPA_DEPLOYMENT_RESOURCE_REQUEST')|default('200m', true) }}"
 
