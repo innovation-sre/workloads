@@ -63,4 +63,4 @@ nodevertical_heavy_probe_period: "{{ lookup('env', 'NODEVERTICAL_HEAVY_PROBE_PER
 expected_nodevertical_duration: "{{ lookup('env', 'EXPECTED_NODEVERTICAL_DURATION')|default(600, true)|int }}"
 
 # Cluster environment
-ocp_cluster_environment: "{{ lookup('env', 'OCP_CLUSTER_ENV')|default('ibm_cloud', true) }}"
+ocp_cluster_environment: "{{ lookup('env', 'OCP_CLUSTER_ENV')|default('', true) }}"
