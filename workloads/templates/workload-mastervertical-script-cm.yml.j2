@@ -70,6 +70,10 @@ data:
     if [ "$(jq '.exit_code==0' ${result_dir}/exit.json)" = "false" ]; then
       workload_log "Cluster Loader Failure"
       workload_log "Test Analysis: Failed due to Cluster Loader failure"
+      echo "----"
+      echo ""
+      cat ${result_dir}/exit.json
+      echo "----"
       exit 1
     fi
     workload_log "Comparing MasterVertical duration to expected duration"
