@@ -113,6 +113,9 @@ data:
   STRESS_SSH_PRIVATE_KEY: "{{pbench_ssh_private_key_file_slurp['content']}}"
   STRESS_SSH_PUBLIC_KEY: "{{pbench_ssh_public_key_file_slurp['content']}}"
   AZURE_AUTH: "{{azure_auth|bool|lower}}"
+  WORKLOAD_NAME: "{{workload_job}}"
+  JOB_NAME: "{{job_name}}"
+  BUILD_NUMBER: "{{build_number}}"
 {% elif workload_job == "storage-fio" %}
   FIOTEST_CONTAINER_IMAGE: "{{fiotest_container_image}}"
   FIOTEST_SSH_PORT: "{{fiotest_ssh_port}}"

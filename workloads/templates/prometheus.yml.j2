@@ -1,0 +1,8 @@
+query:
+ {% for query in promql_queries %}
+  - name: {{query.name}}
+    expr: {{query.expr}}
+    start_time: {{start_time}}
+    end_time: {{end_time}}
+    interval: {{query.interval}}
+  {% endfor %}

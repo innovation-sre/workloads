@@ -67,3 +67,10 @@ ibm_cloud_storage_region: "{{ lookup('env', 'IBM_CLOUD_STORAGE_REGION')|default(
 ibm_cloud_storage_zone: "{{ lookup('env', 'IBM_CLOUD_STORAGE_ZONE')|default('dal13', true) }}"
 azure_auth: "{{ lookup('env', 'AZURE_AUTH')|default(false, true)|bool|lower }}"
 azure_auth_file: "{{ lookup('env', 'AZURE_AUTH_FILE')|default('', true) }}"
+job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
+build_number: "{{ lookup('env', 'BUILD_NUMBER')|default('', true) }}"
+promql_queries:
+  - name: "expr friendly name"
+    expr: "my statement"
+    interval: "30s"
+enable_prometheus_queries: "{{ lookup('env', 'ENABLE_PROMETHEUS_QUERIES')|default(true, true)|bool }}"
