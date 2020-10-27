@@ -74,3 +74,4 @@ promql_queries:
     expr: "my statement"
     interval: "30s"
 enable_prometheus_queries: "{{ lookup('env', 'ENABLE_PROMETHEUS_QUERIES')|default(true, true)|bool }}"
+workload_script_config: "scale-ci-stress-script"

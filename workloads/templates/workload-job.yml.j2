@@ -101,7 +101,7 @@ spec:
       volumes:
       - name: workload-script
         configMap:
-          name: scale-ci-workload-script
+          name: {{ workload_script_config | default ('scale-ci-workload-script') }}
           defaultMode: 0744
       - name: kubeconfig
         secret:
