@@ -48,3 +48,4 @@ namespaces_per_cluster_count: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_COUNT')|
 
 # Pass/fail criteria
 expected_namespaces_per_cluster_duration: "{{ lookup('env', 'EXPECTED_NAMESPACES_PER_CLUSTER_DURATION')|default(600, true)|int }}"
+workload_script_config: "scale-ci-ns-per-cluster-script"
