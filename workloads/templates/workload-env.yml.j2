@@ -9,6 +9,7 @@ data:
 {% for v in http_env_vars %}
   {{ v }}: "{{ lookup('env', v) }}"
 {% endfor %}
+  ENABLE_PBENCH_COPY: "{{enable_pbench_copy|bool|lower}}"
 {% elif workload_job == "mastervertical" %}
   PBENCH_INSTRUMENTATION: "{{pbench_instrumentation|bool|lower}}"
   ENABLE_PBENCH_COPY: "{{enable_pbench_copy|bool|lower}}"

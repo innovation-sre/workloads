@@ -76,7 +76,7 @@ data:
     # Clear results from previous pbench runs.
     PBENCH_CLEAR_RESULTS=${PBENCH_CLEAR_RESULTS:-true}
     # Move the benchmark results to a pbench server.
-    PBENCH_MOVE_RESULTS=${PBENCH_MOVE_RESULTS:-false}
+    PBENCH_MOVE_RESULTS=${ENABLE_PBENCH_COPY:-false}
 
     # HTTP-test specifics
     # Test configuration: a label to append to pbench directories and mb result directories.
