@@ -5,6 +5,7 @@ metadata:
 data:
   ENABLE_PBENCH_AGENTS: "{{enable_pbench_agents|bool|lower}}"
   PPROF_COLLECT: "{{ ((pprof_collect == None) | ternary(false, pprof_collect)) if pprof_collect is defined else false}}"
+  ENABLE_PBENCH_COPY: "{{enable_pbench_copy|bool|lower}}"
 {% if workload_job == "http" %}
 {% for v in http_env_vars %}
   {{ v }}: "{{ lookup('env', v) }}"
