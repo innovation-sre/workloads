@@ -54,3 +54,16 @@ http_env_vars: [
   "HTTP_TEST_STRESS_CONTAINER_IMAGE",
   "HTTP_TEST_SERVER_CONTAINER_IMAGE"
 ]
+promql_queries:
+  - name: "base expr 1"
+    expr: haproxy_server_http_responses_total{route=~"nginx-reencrypt-001", exported_namespace="server-tls-reencrypt-[0-9]+"}
+    interval: "30s"
+  - name: "base expr 2"
+    expr: haproxy_server_http_responses_total{route=~"nginx-edge-001", exported_namespace="server-tls-edge-[0-9]+"}
+    interval: "30s"
+  - name: "base expr 3"
+    expr: haproxy_server_http_responses_total{route=~"nginx-http-001", exported_namespace="server-http-[0-9]+"}
+    interval: "30s"
+  - name: "base expr 4"
+    expr: haproxy_server_http_responses_total{route=~"nginx-passthrough-001", exported_namespace="server-tls-passthrough-[0-9]+"} # Need to confirm
+    interval: "30s"
