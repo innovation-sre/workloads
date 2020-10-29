@@ -102,6 +102,11 @@ data:
     workload_log "Writing Cluster Loader Metrics to clusterloader.json"
     grep "cluster_loader_marker" ${result_dir}/clusterloader.txt > "${result_dir}/clusterloader.json"
 
+    # cleanup
+    for i in {0..${SERVICES_PER_NAMESPACE_COUNT}}; do
+        oc delete dc --all -n services-per-namespace${i} >/dev/null 2>&1
+        oc delete ns services-per-namespace${i} --force --grace-period=0 >/dev/null 2>&1
+    done
     workload_log "Finished workload script"
   services_per_namespace.yaml.template: |
     provider: local
@@ -111,7 +116,11 @@ data:
         - num: ${SERVICES_PER_NAMESPACE_PROJECTS}
           basename: ${SERVICES_PER_NAMESPACE_BASENAME}
           ifexists: delete
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
+          {% endif %}
           templates:
             - num: ${SERVICES_PER_NAMESPACE_COUNT}
               file: /root/workload/deployment-config-cluster-limits-services.yaml
@@ -133,6 +142,8 @@ data:
       apiVersion: v1
       metadata:
         name: deploymentconfig${IDENTIFIER}
+        labels:
+          workload: {{services_per_namespace_basename}}
       spec:
         template:
           metadata:
@@ -173,6 +184,8 @@ data:
       apiVersion: v1
       metadata:
         name: service${IDENTIFIER}
+        labels:
+          workload: {{services_per_namespace_basename}}
       spec:
         selector:
           name: replicationcontroller${IDENTIFIER}

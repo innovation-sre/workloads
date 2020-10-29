@@ -54,3 +54,5 @@ expected_mastervertical_duration: "{{ lookup('env', 'EXPECTED_MASTERVERTICAL_DUR
 
 # Cluster environment
 ocp_cluster_environment: "{{ lookup('env', 'OCP_CLUSTER_ENV')|default('', true) }}"
+workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
+workload_script_config: "scale-ci-mastervertical-script"

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scale-ci-workload-script
+  name: scale-ci-hpa-script
 data:
   run.sh: |
     #!/usr/bin/env bash
@@ -155,8 +155,13 @@ data:
         - num: 1
           basename: {{ hpa_basename }}
           ifexists: delete
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
-          nodeselector: {{ hpa_nodeselector }}
+          {% endif %}
+          labels:
+            workload: {{ hpa_basename }}
           templates:
             - num: 1
               file: /root/workload/pbench-ssh.yaml
@@ -193,6 +198,8 @@ data:
       kind: Namespace
       metadata:
         name: {{ hpatest_basename}}${IDENTIFIER}
+        labels:
+          workload: {{ hpatest_basename}}
       parameters:
       - description: Number to append to the name of resources
         name: IDENTIFIER

@@ -54,6 +54,7 @@ http_env_vars: [
   "HTTP_TEST_STRESS_CONTAINER_IMAGE",
   "HTTP_TEST_SERVER_CONTAINER_IMAGE"
 ]
+workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
 promql_queries:
   - name: "base expr 1"
     expr: haproxy_server_http_responses_total{route=~"nginx-reencrypt-001", exported_namespace="server-tls-reencrypt-[0-9]+"}

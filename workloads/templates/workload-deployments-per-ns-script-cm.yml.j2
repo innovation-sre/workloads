@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scale-ci-workload-script
+  name: scale-ci-deployments-per-ns-script
 data:
   run.sh: |
     #!/bin/sh
@@ -64,7 +64,13 @@ data:
         - num: 1
           basename: {{deployments_per_ns_basename}}
           ifexists: delete
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
+          {% endif %}
+          labels:
+            workload: {{deployments_per_ns_basename}}
           templates:
             - num: {{deployments_per_ns_count}}
               file: deployment-config-cluster-limits-deployments.yaml
@@ -87,6 +93,8 @@ data:
       apiVersion: v1
       metadata:
         name: deploymentconfig${IDENTIFIER}
+        labels:
+          workload: {{deployments_per_ns_basename}}
       spec:
         template:
           metadata:
