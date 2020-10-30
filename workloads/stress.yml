@@ -191,7 +191,7 @@
             prom_user: "internal"
         - name: Set Prometheus pass
           set_fact:
-            prom_pass: "{{prom_pass_cmd.stdout}}"
+            prom_pass: "{{prom_pass_cmd.stdout.replace('\"', '')}}"
         - name: Set Prometheus endpoint/url
           set_fact:
             prom_url: "{{prom_url_cmd.stdout}}"
