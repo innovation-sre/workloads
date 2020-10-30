@@ -192,6 +192,7 @@
         - name: Set Prometheus pass
           set_fact:
             prom_pass: "{{prom_pass_cmd.stdout.replace('\"', '')}}"
+          no_log: true
         - name: Set Prometheus endpoint/url
           set_fact:
             prom_url: "{{prom_url_cmd.stdout}}"
@@ -212,7 +213,7 @@
             - "Job name : {{job_name}}"
             - "Build Id : {{build_number}}"
             - "Workload name : {{workload_name}}"
-            - "Prometheus user :{{prom_user}}"
-            - "Prometheus password :{{prom_pass}}"
-            - "Prometheus url :{{prom_url}}"
+            - "Prometheus user : {{prom_user}}"
+            - "Prometheus password : {{prom_pass}}"
+            - "Prometheus url : {{prom_url}}"
       when: enable_prometheus_queries
