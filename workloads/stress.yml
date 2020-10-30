@@ -194,7 +194,7 @@
             - "end_time : {{ end_time }}"
             - "Job name : {{job_name}}"
             - "Build Id : {{build_number}}"
-            - "Workload name :"
+            - "Workload name : {{workload_name}}"
             - "Prometheus user :"
             - "Prometheus password :"
             - "Prometheus url :"

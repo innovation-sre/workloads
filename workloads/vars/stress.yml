@@ -67,6 +67,7 @@ ibm_cloud_storage_region: "{{ lookup('env', 'IBM_CLOUD_STORAGE_REGION')|default(
 ibm_cloud_storage_zone: "{{ lookup('env', 'IBM_CLOUD_STORAGE_ZONE')|default('dal13', true) }}"
 azure_auth: "{{ lookup('env', 'AZURE_AUTH')|default(false, true)|bool|lower }}"
 azure_auth_file: "{{ lookup('env', 'AZURE_AUTH_FILE')|default('', true) }}"
+workload_name: "stress"
 job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
 build_number: "{{ lookup('env', 'BUILD_NUMBER')|default('', true) }}"
 promql_queries:
