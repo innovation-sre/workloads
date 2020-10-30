@@ -12,6 +12,10 @@
   vars:
     workload_job: "stress"
   tasks:
+    - name: Set starttime
+      shell: |
+        oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="$(date +%s)" --dry-run -o yaml | kubectl apply -f - 
+
     - name: Create scale-ci-tooling directory
       file:
         path: "{{ansible_user_dir}}/scale-ci-tooling"
@@ -166,7 +170,7 @@
       block:
         - name: Get Start Time
           shell: |
-            oc get configmap "scale-ci-{{job_name}}-{{build_number}}-run-info" -n scale-ci-tooling -o jsonpath="{.data.starttime}"
+            oc get configmap "scale-ci-{{ job_name }}-{{ build_number }}-run-info" -n scale-ci-tooling -o jsonpath="{.data.starttime}"
           register: start_time_cmd
         - name: Set Start time
           set_fact:
@@ -183,4 +187,15 @@
             - src: prometheus.yml.j2
               dest: "{{ansible_user_dir}}/scale-ci-tooling/prometheus.yml"
         # Call the python program and generate csv or plot file
-      when: not enable_prometheus_queries
+        - name: Debug outputs
+          debug:
+            msg: 
+            - "start time : {{ start_time }}"
+            - "end_time : {{ end_time }}"
+            - "Job name : {{job_name}}"
+            - "Build Id : {{build_number}}"
+            - "Workload name :"
+            - "Prometheus user :"
+            - "Prometheus password :"
+            - "Prometheus url :"
+      when: enable_prometheus_queries
