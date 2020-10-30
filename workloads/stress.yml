@@ -147,6 +147,8 @@
       retries: 60
       delay: 2
       until: pod_json.stdout | from_json | json_query('items[0].status.phase==`Running`')
+      when: not enable_prometheus_queries
+      # when comment added
 
     - name: Poll until job is complete
       shell: |
@@ -156,7 +158,9 @@
       delay: 30
       until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
-      when: job_completion_poll_attempts|int > 0
+      #when: job_completion_poll_attempts|int > 0
+      when: not enable_prometheus_queries
+      # when comment added
 
     - name: Set up PromQL Queries
       block:
@@ -179,4 +183,4 @@
             - src: prometheus.yml.j2
               dest: "{{ansible_user_dir}}/scale-ci-tooling/prometheus.yml"
         # Call the python program and generate csv or plot file
-      when: enable_prometheus_queries
+      when: not enable_prometheus_queries
