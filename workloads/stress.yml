@@ -184,7 +184,7 @@
           register: prom_url_cmd
         - name: Get Prometheus password
           shell: |
-            oc get secrets -n openshift-monitoring grafana-datasources -o go-template='{{index .data "prometheus.yaml"}}' | base64 --decode | jq '.datasources[0].basicAuthPassword'
+            {%raw%}oc get secrets -n openshift-monitoring grafana-datasources -o go-template="{{index .data 'prometheus.yaml'}}" | base64 --decode | jq ".datasources[0].basicAuthPassword"{%endraw%}
           register: prom_pass_cmd
         - name: Set Prometheus user
           set_fact:
