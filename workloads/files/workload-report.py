@@ -37,7 +37,7 @@ def createEndpoint(query_params_dict):
     auth_credentials = {}
     # Range vector query
     if query_params_dict.get('end') is not None:
-        query_params['query'] = requests.utils.quote(query_params_dict.get('promql'))
+        query_params['query'] = query_params_dict.get('promql')
         query_params['start'] = query_params_dict.get('start')
         query_params['end']   = query_params_dict.get('end')
         if query_params_dict.get('step') is not None:
@@ -45,7 +45,7 @@ def createEndpoint(query_params_dict):
         endpoint = query_params_dict['url'] + '/api/v1/query_range'
     # Instant vector query
     else:
-        query_params['query'] = requests.utils.quote(query_params_dict.get('promql'))
+        query_params['query'] = query_params_dict.get('promql')
         query_params['time']  = query_params_dict.get('start')
         endpoint = query_params_dict['url'] + '/api/v1/query'
 
@@ -58,18 +58,18 @@ def createEndpoint(query_params_dict):
     if query_params_dict.get('timeout') is not None:
             query_params['timeout'] = query_params_dict.get('timeout')
     # return url , api query params and basic auth credentials
-
+    print(query_params)
     return endpoint, query_params, auth_credentials
 
 # Send promql request
 def getMetrics(url, params, user, password):
     try:
         if user is not None and password is not None:
-            res = requests.get(url, auth=HTTPBasicAuth(user, password), verify=False, params=params)
+            response = requests.post(url, auth=HTTPBasicAuth(user, password), verify=False, data=params)
         else:
-            res = requests.get(url, verify=False, params=params)
-        if res.status_code == 200:
-            data = json.loads(res.text)
+            response = requests.get(url, verify=False, params=params)
+        if response.status_code == 200:
+            data = json.loads(response.text)
             if data['status'] != 'success': # check success or failure
                 exit()
             if len(data['data']['result']) < 0: # check if resultset is empty
@@ -77,7 +77,7 @@ def getMetrics(url, params, user, password):
             metrics = parseMetrics(data, data['data']['resultType'])
             return metrics   
         else:
-           print("Something went wrong, HTTP response code: {} HTTP error message: {}".format(res.status_code, res.reason))
+           print("Something went wrong, HTTP response code: {} HTTP error message: {}".format(response.status_code, response.reason))
     except requests.exceptions.RequestException as re:
         print(re)
     #except requests.exceptions.ConnectionError as ce:
