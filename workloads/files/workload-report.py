@@ -37,7 +37,7 @@ def createEndpoint(query_params_dict):
     auth_credentials = {}
     # Range vector query
     if query_params_dict.get('end') is not None:
-        query_params['query'] = query_params_dict.get('promql')
+        query_params['query'] = requests.utils.quote(query_params_dict.get('promql'))
         query_params['start'] = query_params_dict.get('start')
         query_params['end']   = query_params_dict.get('end')
         if query_params_dict.get('step') is not None:
@@ -45,7 +45,7 @@ def createEndpoint(query_params_dict):
         endpoint = query_params_dict['url'] + '/api/v1/query_range'
     # Instant vector query
     else:
-        query_params['query'] = query_params_dict.get('promql')
+        query_params['query'] = requests.utils.quote(query_params_dict.get('promql'))
         query_params['time']  = query_params_dict.get('start')
         endpoint = query_params_dict['url'] + '/api/v1/query'
 
