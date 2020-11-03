@@ -208,7 +208,7 @@
         # path to store reports 
         - name: Set workload report file storage path
           set_fact:
-            file_path: "/tmp/scale-ci-tooling/reports/{{job_name}}-{{build-number}}"
+            file_path: "/tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
           
         # create report dir if not exist
         - name: Create dir if not exist
