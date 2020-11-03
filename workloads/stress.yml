@@ -228,7 +228,7 @@
         
         - name: Get reports
           command: |
-           python3 "{{playbook_dir}}"/files/workload-report.py --start=1603976371.198 --end=1603979971.198 --step={{item.step}} --url=https://{{prom_url}} --user={{prom_user}} --pass={{prom_pass}} --promql={{item.expr}} --file_path={{file_path}} --file_name={{job_name + '-' + build_number + '-' + item.name + '.csv'}}
+           python3 "{{playbook_dir}}"/files/workload-report.py --start="1603976371.198" --end="1603979971.198" --step="{{item.step}}" --url="https://{{prom_url}}" --user="{{prom_user}}" --pass="{{prom_pass}}" --promql="{{item.expr}}" --file_path="{{file_path}}" --file_name="{{job_name + '-' + build_number + '-' + item.name + '.csv'}}"
           with_items: "{{ promql_queries['query'] }}"
           delegate_to: 127.0.0.1
 
