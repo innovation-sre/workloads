@@ -102,7 +102,7 @@ def writeToCsvFile(cmd_args, metrics):
                 csvWriter.writerow({fieldNames[0]: row[0], fieldNames[1]: row[1]})
                 print("{},{}".format(row[0], row[1]))
     else:
-        print("Path is not a directory and/or does not exist")
+        print("Path is not a directory and/or does not exist: {}".format(file_path))
 
 # Process command line args
 parser = argparse.ArgumentParser(description='Run Prometheus queries (promql) using promethues HTTP API.', epilog="Happy quering! :)")
