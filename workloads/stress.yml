@@ -212,7 +212,7 @@
           
         # create report dir if not exist
         - name: Create dir if not exist
-          command: "mkdir -p /tmp/scale-ci-tooling/reports/{{job_name}}-{{build-number}}"
+          command: "mkdir -p /tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
           delegate_to: 127.0.0.1
           ignore_errors: yes
 
