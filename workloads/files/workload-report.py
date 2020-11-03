@@ -77,7 +77,7 @@ def getMetrics(url, params, user, password):
             metrics = parseMetrics(data, data['data']['resultType'])
             return metrics   
         else:
-           print("Something went wrong: {}".format(res.status_code))
+           print("Something went wrong, HTTP response code: {} HTTP error message: {}".format(res.status_code, res.reason))
     except requests.exceptions.RequestException as re:
         print(re)
     #except requests.exceptions.ConnectionError as ce:
