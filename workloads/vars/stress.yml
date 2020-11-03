@@ -74,5 +74,6 @@ promql_queries:
   - name: "etcd-object-count"
     expr: "sum(rate(etcd_object_counts{}[1m]))"
     interval: "30s"
+    step: "15"
 enable_prometheus_queries: "{{ lookup('env', 'ENABLE_PROMETHEUS_QUERIES')|default(true, true)|bool }}"
 workload_script_config: "scale-ci-stress-script"

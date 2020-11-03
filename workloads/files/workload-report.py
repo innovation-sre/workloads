@@ -23,10 +23,13 @@ except Exception as e:
 # parseMetrics
 def parseMetrics(metrics_dictionary, result_type):
     metrics = []
+    
     for row in (metrics_dictionary['data']['result']):
+        print("Metrics lenght: {}".format(len(metrics_dictionary['data']['result'])))
         if result_type == 'vector':
             metrics.append(str(row['value'][0]) + ',' + str(row['value'][1]))
         elif result_type == 'matrix':
+            print("Metrics matrix lenght: {}".format(len(row['values'])))
             for value in row['values']:
                 metrics.append(str(value[0]) + ',' + str(value[1]))
     return metrics
@@ -65,9 +68,10 @@ def createEndpoint(query_params_dict):
 def getMetrics(url, params, user, password):
     try:
         if user is not None and password is not None:
-            response = requests.post(url, auth=HTTPBasicAuth(user, password), verify=False, data=params)
+            response = requests.get(url, auth=HTTPBasicAuth(user, password), verify=False, params=params)
         else:
             response = requests.get(url, verify=False, params=params)
+        print("HTTP response code: {} HTTP error message: {}, URL: {}".format(response.status_code, response.reason, response.request.url))
         if response.status_code == 200:
             data = json.loads(response.text)
             if data['status'] != 'success': # check success or failure
@@ -100,7 +104,7 @@ def writeToCsvFile(cmd_args, metrics):
             for i in metrics:
                 row = i.split(',')
                 csvWriter.writerow({fieldNames[0]: row[0], fieldNames[1]: row[1]})
-                print("{},{}".format(row[0], row[1]))
+                #print("{},{}".format(row[0], row[1]))
     else:
         print("Path is not a directory and/or does not exist: {}".format(file_path))
 
@@ -110,7 +114,7 @@ parser = argparse.ArgumentParser(description='Run Prometheus queries (promql) us
 # Args. Checkout ansible's argparse
 parser.add_argument("--start",      help="Start timestamp, Defaults to time for instant vector time-series samples", required=True)
 parser.add_argument("--end",        help="End timestamp", required=False)
-parser.add_argument("--step",       help="Query resolution step width in duration format or float number of seconds", required=False)
+parser.add_argument("--step",       help="Query resolution step width in duration format or float number of seconds", required=True)
 parser.add_argument("--interval",   help="Prometheus range vector interval", required=False)
 parser.add_argument("--promql",     help="Prometheus expression query string", required=True)
 parser.add_argument("--user",  help="Prometheus basic auth user", required=False)
