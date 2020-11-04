@@ -112,9 +112,6 @@ data:
           basename: ${NAMESPACES_PER_CLUSTER_BASENAME}
           ifexists: reuse
           nodeselector: "node-role.kubernetes.io/worker="
-          labels:
-            workload: "namespaces-per-cluster"
-            workload-type: "control-plane"
           templates:
             - num: 1
               file: /root/workload/bc-imagestream-template.yaml
