@@ -16,7 +16,7 @@ Tool an OpenShift cluster and run OpenShift Performance and Scale Workloads.
 4. Run the workload playbook(s)
 
 ```
-$ git clone https://github.com/openshift-scale/workloads.git
+$ git clone https://github.com/innovation-sre/workloads.git
 $ cd workloads
 $ cp workloads/inventory.example inventory
 $ # Edit inventory and add your expected orchestration host
