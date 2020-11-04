@@ -110,7 +110,7 @@ data:
       projects:
         - num: ${NAMESPACES_PER_CLUSTER_COUNT}
           basename: ${NAMESPACES_PER_CLUSTER_BASENAME}
-          ifexists: reuse
+          ifexists: delete
           nodeselector: "node-role.kubernetes.io/worker="
           templates:
             - num: 1
