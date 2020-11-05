@@ -123,6 +123,7 @@ parser.add_argument("--url",   help="Prometheus server url", required=True)
 parser.add_argument("--timeout",  help="Prometheus HTTP request timeout", required=False)
 parser.add_argument("--file_path",  help="File path to store csv output", required=True)
 parser.add_argument("--file_name",  help="File name using workload/job name", required=True)
+parser.add_argument("--print",  help="Print", required=True)
 args = parser.parse_args()
 
 # Main
