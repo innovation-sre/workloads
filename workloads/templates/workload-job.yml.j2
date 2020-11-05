@@ -7,7 +7,7 @@ metadata:
 spec:
   parallelism: 1
   completions: 1
-  backoffLimit: 6
+  backoffLimit: {{ workload_job_retries | default(6) }}
   template:
     metadata:
       name: scale-ci-workload
