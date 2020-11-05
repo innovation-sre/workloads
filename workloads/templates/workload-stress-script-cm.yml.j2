@@ -7,7 +7,7 @@ data:
     #!/bin/sh
     set -eo pipefail
     # pbench Configuration
-    echo "$(date -u) Configuring pbench for FIO I/O scale test"
+    echo "$(date -u) Configuring pbench for Stress I/O scale test"
     mkdir -p /var/lib/pbench-agent/tools-default/
     echo "${USER_NAME:-default}:x:$(id -u):0:${USER_NAME:-default} user:${HOME}:/sbin/nologin" >> /etc/passwd
     echo "" > /var/lib/pbench-agent/tools-default/oc
@@ -36,7 +36,7 @@ data:
       for node in $worker_nodes; do
         echo "worker" > /var/lib/pbench-agent/tools-default/remote@$node
       done
-      # FIO test expect storage backend - get label for these nodes too
+      # Stress test expect storage backend - get label for these nodes too
       storage_nodes=`oc get nodes -l pbench_agent=true,pbench_role=worker --no-headers | awk '{print $1}'`
       for node in $storage_nodes; do
         echo "storage" > /var/lib/pbench-agent/tools-default/remote@$node
@@ -143,7 +143,7 @@ data:
       labels:
         workload-template: stress
       annotations:
-        description: A template for creating an fio pod with PVC
+        description: A template for creating an stress pod with PVC
         tags: stress,perf
     labels:
       name: stresstest-test
