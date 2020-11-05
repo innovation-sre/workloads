@@ -120,7 +120,6 @@
       register: pod_json
       retries: 60
       delay: 2
-      ignore_errors: yes
       until: pod_json.stdout | from_json | json_query('items[0].status.phase==`Running`')
 
     - name: Poll until job is complete
@@ -129,7 +128,7 @@
       register: job_json
       retries: "{{job_completion_poll_attempts}}"
       delay: 10
-      until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
-      failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
+      until: job_json.rc == 0 and (job_json.stdout | default({}) | from_json | json_query('status.succeeded==`1` || status.failed==`1`'))
+      failed_when: job_json.rc == 0 and (job_json.stdout | default({}) | from_json | json_query('status.succeeded==`1`') == false)
       ignore_errors: yes
       when: job_completion_poll_attempts|int > 0

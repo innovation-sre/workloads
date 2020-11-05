@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scale-ci-workload-script
+  name: scale-ci-podvertical-script
 data:
   run.sh: |
     #!/bin/sh
@@ -113,7 +113,13 @@ data:
           basename: ${PODVERTICAL_BASENAME}
           tuning: default
           ifexists: delete
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
+          {% endif %}
+          labels:
+            workload: {{ podvertical_basename }}
           pods:
             - num: ${PODVERTICAL_MAXPODS}
               basename: podvert
@@ -135,6 +141,7 @@ data:
       name: podvert
       labels:
         name: podvert
+        workload: {{ podvertical_basename }}
     spec:
       containers:
       - name: podvert

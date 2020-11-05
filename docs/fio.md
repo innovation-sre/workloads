@@ -260,12 +260,12 @@ Default: `1`
 Running one iteration of test can give misleading results, and it is recommended to run multiple iterations to catch up
 deviations and anomalies. Test result will show best iteration.
 
-### FIOTEST_NODESELECTOR
+### WORKLOAD_NODESELECTOR
 
 Default: ""
 
 For cases when it is necessary to have FIO pods to be assigned to already labeled nodes with specific label
-`FIOTEST_NODESELECTOR` allows to specify desired label.
+`WORKLOAD_NODESELECTOR` allows to specify desired label.
 FIO I/O test does not label nodes, it expect that labels are already assigned to nodes.
 
 

@@ -55,7 +55,7 @@ stress_parallelism: "{{ lookup('env', 'STRESS_PARALLELISM')|default(6, true)|int
 stress_completions: "{{ lookup('env', 'STRESS_COMPLETIONS')|default(24, true)|int }}"
 stress_filesize: "{{ lookup('env', 'STRESS_FILESIZE')|default('1GB', true) }}"
 stress_runtime: "{{ lookup('env', 'STRESS_RUNTIME')|default('60s', true) }}"
-stress_nodeselector: "{{ lookup('env', 'STRESS_NODESELECTOR')|default('', true) }}"
+workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
 stress_ssh_port: "{{ lookup('env', 'STRESS_SSH_PORT')|default(2022, true)|int }}"
 stress_description: "{{lookup('env', 'STRESS_DESCRIPTION')|default('', true) }}"
 stress_ssh_authorized_keys: "{{pbench_ssh_public_key_file_slurp['content']}}"

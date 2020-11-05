@@ -24,10 +24,8 @@ else
 fi
 
 echo "Starting test for: $HTTP_TEST_SUFFIX"
-rm -rf /tmp/workloads
-git clone http://github.com/openshift-scale/workloads /tmp/workloads
-echo "[orchestration]" > /tmp/workloads/inventory; echo "${ORCHESTRATION_HOST:-localhost}" >> /tmp/workloads/inventory
-time ansible-playbook -vv -i /tmp/workloads/inventory /tmp/workloads/workloads/http.yml
+echo "[orchestration]" > inventory; echo "${ORCHESTRATION_HOST:-localhost}" >> inventory
+time ansible-playbook -vv -i inventory workloads/http.yml
 for (( i=1; i<=5; i++ ))
 do
   pod_name=$(oc get pods -n scale-ci-tooling | grep scale-ci-http | awk '{print $1}')
@@ -58,6 +56,6 @@ else
   echo ${compare_router_uuid} >> uuid.txt
 fi
 
-../run_compare.sh ${baseline_router_uuid} ${compare_router_uuid} mb
-
-python3 csv_gen.py --files compare.yaml
+#../run_compare.sh ${baseline_router_uuid} ${compare_router_uuid} mb
+#
+#python3 workloads/router-perf/csv_gen.py --files compare.yaml

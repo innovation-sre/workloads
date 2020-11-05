@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scale-ci-workload-script
+  name: scale-ci-fio-script
 data:
   run.sh: |
     #!/bin/sh
@@ -104,8 +104,13 @@ data:
         - num: 1
           basename: {{ fiotest_basename }}
           ifexists: delete
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
-          nodeselector: {{ fiotest_nodeselector }}
+          {% endif %}
+          labels:
+            workload: {{ fiotest_basename }}
           templates:
             - num: 1
               file: /root/workload/pbench-ssh.yaml
@@ -188,7 +193,7 @@ data:
       kind: ReplicationController
       metadata:
         labels:
-          name: fio
+          workload: fio
         name: fiotest-pod-${IDENTIFIER}
       spec:
         replicas: 1

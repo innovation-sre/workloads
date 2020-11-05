@@ -110,7 +110,7 @@ data:
       projects:
         - num: ${NAMESPACES_PER_CLUSTER_COUNT}
           basename: ${NAMESPACES_PER_CLUSTER_BASENAME}
-          ifexists: reuse
+          ifexists: delete
           nodeselector: "node-role.kubernetes.io/worker="
           templates:
             - num: 1
@@ -121,6 +121,15 @@ data:
                 - ENV_VALUE: "asodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij0emc2oed2ed2ed2e2easodfn209e8j0eij12"
             - num: 10
               file: /root/workload/ssh-secret-template.yaml
+       tuningsets:
+         - name: default
+           templates:
+             stepping:
+               stepsize: ${NAMESPACES_PER_CLUSTER_STEPSIZE}
+               pause: ${NAMESPACES_PER_CLUSTER_PAUSE}
+               timeout: ${NAMESPACES_PER_CLUSTER_TS_TIMEOUT}
+             rate_limit:
+               delay: 0
   bc-imagestream-template.yaml: |
     ---
     Kind: Template

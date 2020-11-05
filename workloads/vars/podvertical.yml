@@ -52,3 +52,5 @@ podvertical_ts_timeout: "{{ lookup('env', 'PODVERTICAL_TS_TIMEOUT')|default(600,
 
 # Pass/fail criteria
 expected_podvertical_duration: "{{ lookup('env', 'EXPECTED_PODVERTICAL_DURATION')|default(600, true)|int }}"
+workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
+workload_script_config: "scale-ci-podvertical-script"

@@ -25,8 +25,9 @@ pbench_server: "{{ lookup('env', 'PBENCH_SERVER')|default('', true) }}"
 # Other variables for workload tests
 scale_ci_results_token: "{{ lookup('env', 'SCALE_CI_RESULTS_TOKEN')|default('', true) }}"
 job_completion_poll_attempts: "{{ lookup('env', 'JOB_COMPLETION_POLL_ATTEMPTS')|default(1000, true)|int }}"
-
+workload_script_config: "scale-ci-http-script"
 # HTTP workload specific parameters
+enable_pbench_copy: "{{ lookup('env', 'ENABLE_PBENCH_COPY')|default('', true) }}"
 http_env_vars: [
   "ES_SERVER",
   "ES_PORT",
@@ -53,3 +54,17 @@ http_env_vars: [
   "HTTP_TEST_STRESS_CONTAINER_IMAGE",
   "HTTP_TEST_SERVER_CONTAINER_IMAGE"
 ]
+workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
+promql_queries:
+  - name: "base expr 1"
+    expr: haproxy_server_http_responses_total{route=~"nginx-reencrypt-001", exported_namespace="server-tls-reencrypt-[0-9]+"}
+    interval: "30s"
+  - name: "base expr 2"
+    expr: haproxy_server_http_responses_total{route=~"nginx-edge-001", exported_namespace="server-tls-edge-[0-9]+"}
+    interval: "30s"
+  - name: "base expr 3"
+    expr: haproxy_server_http_responses_total{route=~"nginx-http-001", exported_namespace="server-http-[0-9]+"}
+    interval: "30s"
+  - name: "base expr 4"
+    expr: haproxy_server_http_responses_total{route=~"nginx-passthrough-001", exported_namespace="server-tls-passthrough-[0-9]+"} # Need to confirm
+    interval: "30s"

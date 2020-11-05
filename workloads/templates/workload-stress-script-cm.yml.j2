@@ -109,8 +109,13 @@ data:
         - num: 1
           basename: {{ stress_basename }}
           ifexists: delete
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
-          nodeselector: {{ stress_nodeselector }}
+          {% endif %}
+          labels:
+            workload: {{ stress_basename }}
           templates:
             - num: 1
               file: /root/workload/pbench-ssh.yaml
@@ -135,6 +140,8 @@ data:
     apiVersion: v1
     metadata:
       name: stress
+      labels:
+        workload-template: stress
       annotations:
         description: A template for creating an fio pod with PVC
         tags: stress,perf
@@ -193,7 +200,7 @@ data:
       metadata:
         name: scale-ci-stress
         labels:
-          name: scale-ci-workload
+          workload:  {{ stress_basename }}
       spec:
         parallelism: {{ stress_parallelism }}
         completions: {{ stress_completions }}
