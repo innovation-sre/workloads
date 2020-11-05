@@ -45,8 +45,12 @@ namespaces_per_cluster_test_prefix: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_TE
 namespaces_per_cluster_cleanup: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_CLEANUP')|default(true, true)|bool|lower }}"
 namespaces_per_cluster_basename: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_BASENAME')|default('namespaces-per-cluster', true) }}"
 namespaces_per_cluster_count: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_COUNT')|default(1000, true)|int }}"
+namespaces_per_cluster_stepsize: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_STEPSIZE')|default(50, true) }}"
+namespaces_per_cluster_pause: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_PAUSE')|default(60, true) }}"
+namespaces_per_cluster_ts_timeout: "{{ lookup('env', 'NAMESPACES_PER_CLUSTER_TS_TIMEOUT')|default(600, true) }}"
 
 # Pass/fail criteria
 expected_namespaces_per_cluster_duration: "{{ lookup('env', 'EXPECTED_NAMESPACES_PER_CLUSTER_DURATION')|default(600, true)|int }}"
 workload_script_config: "scale-ci-ns-per-cluster-script"
 workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
+workload_job_retries: "{{ lookup('env', 'WORKLOAD_RETRIES')|default(6, true) }}"
