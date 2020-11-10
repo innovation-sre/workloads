@@ -121,6 +121,8 @@ data:
           {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
           {% endif %}
+          labels:
+            workload: ${SERVICES_PER_NAMESPACE_BASENAME}
           templates:
             - num: ${SERVICES_PER_NAMESPACE_COUNT}
               file: /root/workload/deployment-config-cluster-limits-services.yaml

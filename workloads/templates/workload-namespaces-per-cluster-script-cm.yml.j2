@@ -112,6 +112,13 @@ data:
           basename: ${NAMESPACES_PER_CLUSTER_BASENAME}
           ifexists: delete
           nodeselector: "node-role.kubernetes.io/worker="
+          {% if workload_nodeselector %}
+          nodeselector: {{ workload_nodeselector }}
+          {% else %}
+          nodeselector: "node-role.kubernetes.io/worker="
+          {% endif %}
+          labels:
+            workload: ${NAMESPACES_PER_CLUSTER_BASENAME}
           templates:
             - num: 1
               file: /root/workload/bc-imagestream-template.yaml

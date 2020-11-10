@@ -149,7 +149,7 @@ data:
           nodeselector: "node-role.kubernetes.io/worker="
           {% endif %}
           labels:
-            workload: ${PODVERTICAL_BASENAME}
+            workload: ${MASTERVERTICAL_BASENAME}
           templates:
             - num: 3
               file: /root/workload/build-config-template.yaml

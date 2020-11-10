@@ -114,8 +114,8 @@ data:
           {% else %}
           nodeselector: "node-role.kubernetes.io/worker="
           {% endif %}
-          #labels:
-          #  workload: {{ stress_basename }}
+          labels:
+            workload: {{ stress_basename }}
           templates:
             - num: 1
               file: /root/workload/pbench-ssh.yaml
