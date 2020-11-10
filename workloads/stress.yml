@@ -99,17 +99,13 @@
             oc create -f {{ansible_user_dir}}/scale-ci-tooling/scale-ci-tooling-ns.yml
       when: scale_ci_tooling_ns_exists.rc != 0
 
-    - name: Create tooling service account
+    - name: Create tooling service account # TODO: Workout if all workloads require default SA setting
       shell: |
         oc create serviceaccount useroot -n scale-ci-tooling
         oc adm policy add-scc-to-user privileged -z useroot -n scale-ci-tooling
-      when: enable_pbench_agents|bool
 
-    - name: Add serviceaccount for useroot when pbench is not used
-      shell: |
-        oc delete serviceaccount -n scale-ci-tooling useroot
-        oc create serviceaccount useroot -n scale-ci-tooling
-      when: not enable_pbench_agents|bool
+        # Add default to privileged context
+        oc adm policy add-scc-to-user privileged -z default -n scale-ci-tooling
 
     - name: Create/replace kubeconfig secret
       shell: |

@@ -68,6 +68,7 @@ data:
       sleep 10
       echo "Waiting on stress job to start..."
     done
+    oc adm policy add-scc-to-user privileged -z default -n stress0
     echo "$(date -u) Stress Job started."
     ## necessary for user different than root
     clients=`oc get pods --output=json -n {{ stress_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
