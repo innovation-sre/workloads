@@ -67,7 +67,8 @@
     # path to store reports 
     - name: Set workload report file storage path
       set_fact:
-        file_path: "/tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
+        file_path: "{{workspace}}/reports"
+        #file_path: "/tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
 
     # Call the python program and generate csv or plot file
     - name: Get/run reports
