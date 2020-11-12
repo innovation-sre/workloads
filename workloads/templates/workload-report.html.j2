@@ -1,4 +1,7 @@
 <h2>Workload Report Summary</h2>
 {% for query in promql_queries.query %}
-    <p>File name is: {{job_name}}-{{build_number}}-{{query.name}}-graph.png
+    <p>
+        File name is: {{job_name}}-{{build_number}}-{{query.name}}-graph.png
+        <img src="{{job_name}}-{{build_number}}-{{query.name}}-graph.png"/>
+    </p>
 {% endfor %}
