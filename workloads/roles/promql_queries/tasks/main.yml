@@ -1,0 +1,17 @@
+---
+- name: Get Start Time
+  shell: |
+    oc get configmap "scale-ci-{{ job_name }}-{{ build_number }}-run-info" -n scale-ci-tooling -o jsonpath="{.data.starttime}"
+  register: start_time_cmd
+- name: Set Start time
+  set_fact:
+    start_time: "{{start_time_cmd.stdout}}"
+
+- name: Template prometheus config
+  template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    lstrip_blocks: yes
+  with_items:
+    - src: prometheus.yml.j2
+      dest: "{{ansible_user_dir}}/scale-ci-tooling/prometheus.yml"

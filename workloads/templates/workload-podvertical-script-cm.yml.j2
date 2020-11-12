@@ -93,6 +93,7 @@ data:
     export es={{ snafu_es_host }}
     export es_port={{ snafu_es_port }}
     export es_index={{ snafu_es_index_prefix }}
+    #oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="$(date +%s)" --dry-run -o yaml | kubectl apply -f -
     VIPERCONFIG=/tmp/podvertical.yaml run_snafu -t cl scale-ci --cl-output True --dir "${result_dir}" -p openshift-tests | tee "${result_dir}/clusterloader.txt"
     exit_code=$?
     end_time=$(date +%s)

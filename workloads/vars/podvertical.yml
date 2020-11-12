@@ -50,6 +50,33 @@ podvertical_stepsize: "{{ lookup('env', 'PODVERTICAL_STEPSIZE')|default(500, tru
 podvertical_pause: "{{ lookup('env', 'PODVERTICAL_PAUSE')|default(30, true)|int }}"
 podvertical_ts_timeout: "{{ lookup('env', 'PODVERTICAL_TS_TIMEOUT')|default(600, true)|int }}"
 
+#Prometheus vars
+workload_name: "podvertical"
+job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
+build_number: "{{ lookup('env', 'BUILD_NUMBER')|default('', true) }}"
+promql_queries:
+  - name: "etcd-object-count"
+    expr: "sum(rate(etcd_object_counts{}[1m]))"
+    interval: "30s"
+    step: "60"
+    print: "yes"
+  - name: "qps-master-node"
+    expr: "sum by (instance) (rate(apiserver_request_total{}[1m]))"
+    interval: "30s"
+    step: "60"
+    print: "yes"
+  - name: "success-rate"
+    expr: "sum by (instance) (rate(apiserver_request_total{code=~'[25]..'}[1m]))"
+    interval: "30s"
+    step: "60"
+    print: "yes"
+  - name: "error-rate"
+    expr: "sum by (instance) (rate(apiserver_request_total{code=~'[45]..'}[1m]))"
+    interval: "30s"
+    step: "60"
+    print: "yes"
+enable_prometheus_queries: "{{ lookup('env', 'ENABLE_PROMETHEUS_QUERIES')|default(true, true)|bool }}"
+
 # Pass/fail criteria
 expected_podvertical_duration: "{{ lookup('env', 'EXPECTED_PODVERTICAL_DURATION')|default(600, true)|int }}"
 workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"

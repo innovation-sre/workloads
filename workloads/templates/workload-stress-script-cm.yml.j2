@@ -5,6 +5,7 @@ metadata:
 data:
   run.sh: |
     #!/bin/sh
+    echo "Starting Job"
     set -eo pipefail
     # pbench Configuration
     echo "$(date -u) Configuring pbench for Stress I/O scale test"
@@ -61,7 +62,7 @@ data:
     oc delete clusterrolebinding/kube-stresscheck-psp || :
     oc delete psp/kube-stresscheck-psp || :
     VIPERCONFIG=/root/workload/stresstest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
-    oc create configmap -n scale-ci-tooling scale-ci-$JOB_NAME-$BUILD_NUMBER-run-info --from-literal=starttime="$(date +%s)" --dry-run -o yaml | kubectl apply -f -
+    oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="$(date +%s)" --dry-run -o yaml | kubectl apply -f -
     echo "$(date -u) Pods for STRESS I/O test created."
     # wait until all pods are started and then collect data
     while [[ $(oc get job -n {{ stress_basename }}0 scale-ci-stress -o json | jq -e '.status.active==1') == "true"  ]] ; do

@@ -12,6 +12,18 @@
   vars:
     workload_job: "podvertical"
   tasks:
+    # Get workload start time
+    - name: Get workload start time
+      shell: |
+          date +%s
+      register: starttime_set
+      when: enable_prometheus_queries
+
+    - name: Set workload starttime
+      shell: |
+        oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="{{starttime_set.stdout}}" --dry-run -o yaml | kubectl apply -f -
+      when: enable_prometheus_queries
+
     - name: Create scale-ci-tooling directory
       file:
         path: "{{ansible_user_dir}}/scale-ci-tooling"
@@ -127,11 +139,9 @@
       include_role:
         name: azure-auth
       when: azure_auth and azure_auth_file != ""
-
     - name: Create/replace workload job to that runs workload script
       shell: |
         oc replace --force -n scale-ci-tooling -f "{{ansible_user_dir}}/scale-ci-tooling/workload-job.yml"
-
     - name: Poll until job pod is running
       shell: |
         oc get pods --selector=job-name=scale-ci-podvertical -n scale-ci-tooling -o json
@@ -139,7 +149,6 @@
       retries: 60
       delay: 2
       until: pod_json.stdout | from_json | json_query('items[0].status.phase==`Running`')
-
     - name: Poll until job is complete
       shell: |
         oc get job scale-ci-podvertical -n scale-ci-tooling -o json
@@ -149,3 +158,8 @@
       until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
       when: job_completion_poll_attempts|int > 0
+
+    - name: Set up PromQL queries for workload report
+      include_role:
+        name: promql_queries 
+      when: enable_prometheus_queries
