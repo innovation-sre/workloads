@@ -58,17 +58,10 @@
         prom_pass: "{{prom_pass_cmd.stdout.replace('\"', '')}}"
       no_log: true
 
-    # create report dir if not exist
-    - name: Create dir if not exist
-      command: "mkdir -p /tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
-      delegate_to: 127.0.0.1
-      ignore_errors: yes
-
     # path to store reports 
     - name: Set workload report file storage path
       set_fact:
         file_path: "{{workspace}}/reports"
-        #file_path: "/tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
 
     # Call the python program and generate csv or plot file
     - name: Get/run reports
@@ -86,3 +79,5 @@
       with_items: 
         - "{{ promql_queries.query }}" 
       delegate_to: 127.0.0.1
+
+    # template for HTML report
