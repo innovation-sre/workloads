@@ -53,6 +53,7 @@ podvertical_ts_timeout: "{{ lookup('env', 'PODVERTICAL_TS_TIMEOUT')|default(600,
 #Prometheus vars
 workload_name: "podvertical"
 job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
+job_url: "{{ lookup('env', 'JOB_URL')|default('', true) }}"
 build_number: "{{ lookup('env', 'BUILD_NUMBER')|default('', true) }}"
 workspace: "{{ lookup('env', 'WORKSPACE')|default('', true) }}"
 promql_queries:
