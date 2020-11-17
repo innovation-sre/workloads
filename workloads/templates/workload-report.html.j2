@@ -2,6 +2,6 @@
 {% for query in promql_queries.query %}
     <p>
         File name is: {{job_url}}/ws/reports/{{job_name}}-{{build_number}}-{{query.name}}-graph.png
-        <img src="{{job_url}}/ws/reports/{{job_name}}-{{build_number}}-{{query.name}}-graph.png"/>
+        <img src="{{job_url}}ws/reports/{{job_name}}-{{build_number}}-{{query.name}}-graph.png"/>
     </p>
 {% endfor %}
