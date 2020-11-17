@@ -8,7 +8,7 @@
   gather_facts: true
   remote_user: "{{orchestration_user}}"
   vars_files:
-    - vars/podvertical.yml
+    - "vars/{{ playbook_vars_file }}"
   tasks:
     # Read promql vars from template use job_name and build_number
     - name: Lookup list of prom queries
