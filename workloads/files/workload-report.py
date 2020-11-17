@@ -36,7 +36,6 @@ def parseMetrics(metrics_dictionary, result_type):
         except IndexError:
             metric_name = "n/a"
         if result_type == 'vector':
-            print(row)
             counter = counter + 1
             metric = round(float(row['value'][1]), 1)
             metrics.append(str(counter) + ',' + str(row['value'][0]) + ',' + str(metric) + "," + metric_name)
@@ -98,10 +97,6 @@ def getMetrics(url, params, user, password):
            print("Something went wrong, HTTP status code: {} - Message: {}/{}".format(response.status_code, response.reason, response.text))
     except requests.exceptions.RequestException as re:
         print(re)
-    #except requests.exceptions.ConnectionError as ce:
-    #    print(ce)
-    #except requests.exceptions.ConnectTimeout as ct:
-    #    print(ct)
 
 # Plot metrics graph from csv
 
@@ -126,7 +121,6 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file):
     for i in x_axis:
         ts = datetime.datetime.fromtimestamp(int(i)).isoformat()
         timestamp.append(str(ts).split('T')[1])
-    print(timestamp)
 
     # Group metrics by dimension i
     for i in y_axis:
@@ -170,15 +164,6 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file):
     )
     # Write image to file
     fig.write_image(image_file, width=900, height=600)
-
-# generate graph
-def generateGraphReport(reportFile, x_axis="", y_axis="", title="", description="", file_name=""):
-    df1 = pd.read_csv(reportFile)
-    labels = {}
-    labels['_'.join(x_axis.split())] = x_axis
-    labels['_'.join(y_axis.split())] = y_axis
-    fig1 = px.line(df1, x='_'.join(x_axis.split()), y='_'.join(y_axis.split()), title=title, labels=labels)
-    fig1.write_image(file_name)
 
 # File path to store csv output
 def writeToCsvFile(cmd_args, metrics):
@@ -225,14 +210,10 @@ args = parser.parse_args()
 # Main
 if __name__ == '__main__':
     # Get api url, http query params and auth credentials if exist
-    print(vars(args))
     url, params, basic_auth = createEndpoint(vars(args))
 
     # Send HTTP request and pull metrics from prometheus server
     metrics = getMetrics(url, params, basic_auth.get('user'), basic_auth.get('pass'))
-    for i in metrics:
-        print(i)
-        pass
 
     # Write metrics as csv data
     metrics_csv_file = writeToCsvFile(vars(args), metrics)
@@ -249,5 +230,4 @@ if __name__ == '__main__':
         file_name = cmd_params.get('file_name').split('.', 1)[0] + '-graph.png'
         image_file = os.path.join(file_path, file_name)
         print("Image File: {}".format(image_file))
-        #generateGraphReport(metrics_csv_file, title=title, description=description, x_axis=x_axis, y_axis=y_axis, file_name=image_file)
         plotGraph(metrics_csv_file, title, x_label, y_label, image_file)

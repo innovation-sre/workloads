@@ -83,14 +83,3 @@
       with_items: 
         - "{{ promql_queries.query }}" 
       delegate_to: 127.0.0.1
-
-    # template for HTML report
-    - name: template for HTML report
-      template:
-        src: "{{item.src}}"
-        dest: "{{item.dest}}"
-        lstrip_blocks: yes
-      with_items:
-        - src: workload-report.html.j2
-          dest: "{{file_path}}/index.html"
-      delegate_to: 127.0.0.1
