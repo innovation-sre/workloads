@@ -75,7 +75,11 @@
         --pass="{{ prom_pass }}" \
         --promql="{{item.expr}}" \
         --file_path="{{file_path}}" \
-        --file_name="{{job_name + '-' + build_number + '-' + item.name + '.csv'}}"
+        --file_name="{{job_name + '-' + build_number + '-' + item.name + '.csv'}}" \
+        --title="{{item.title}}" \
+        --description="{{item.description}}" \
+        --x_axis="{{item.x_label}}" \
+        --y_axis="{{item.y_label}}"
       with_items: 
         - "{{ promql_queries.query }}" 
       delegate_to: 127.0.0.1
