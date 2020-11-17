@@ -132,7 +132,7 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file):
             for y_axis_value in y_axis:
                 if y_axis_value == row[3]:
                     tmp = data_set.get(y_axis_value)
-                    if row[2] != None and row[2] != 'nan' and row[2] != "":
+                    if row[2] != None and row[2] != 'nan' and row[2] != "" and row[2] != 'NaN':
                         tmp.append(row[2]) 
                     else:
                         tmp.append(0.0)
