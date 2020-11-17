@@ -154,7 +154,7 @@ promql_queries:
     x_label: "Time in minutes"
     y_label: "Number of bad requests per sec"
   - name: "successful-pods"
-    expr: "sum(kubelet_running_pod_count{node!~"master.*"}) by (node)"
+    expr: "sum(kubelet_running_pod_count{node!~'master.*'}) by (node)"
     interval: "30s"
     step: "60"
     print: "yes"
