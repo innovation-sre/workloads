@@ -83,7 +83,9 @@ workload_script_config: "scale-ci-hpa-script"
 #Prometheus vars
 workload_name: "nodevertical"
 job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
+job_url: "{{ lookup('env', 'JOB_URL')|default('', true) }}"
 build_number: "{{ lookup('env', 'BUILD_NUMBER')|default('', true) }}"
+workspace: "{{ lookup('env', 'WORKSPACE')|default('', true) }}"
 promql_queries:
   - name: "etcd-object-count"
     expr: "sum(rate(etcd_object_counts{}[1m]))"
@@ -175,3 +177,6 @@ promql_queries:
     description: "Scaling limited by maximum replicas"
     x_label: "Time in minutes"
     y_label: "No of HPAs (Maxed)"
+
+# Enable generating reports
+enable_prometheus_queries: "{{ lookup('env', 'ENABLE_PROMETHEUS_QUERIES')|default(true, true)|bool }}"
