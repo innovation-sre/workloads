@@ -94,7 +94,7 @@ promql_queries:
     x_label: "Time in minutes"
     y_label: "Latency seconds"
   - name: "kubelet-start-latency"
-    expr: "rate(kubelet_pod_start_latency_microseconds_sum[$interval]) * 1e-6"
+    expr: "rate(kubelet_pod_start_latency_microseconds_sum[1m]) * 1e-6"
     interval: "30s"
     step: "60"
     print: "yes"
