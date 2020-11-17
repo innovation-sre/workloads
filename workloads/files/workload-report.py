@@ -219,8 +219,8 @@ if __name__ == '__main__':
     metrics_csv_file = writeToCsvFile(vars(args), metrics)
 
     #Generate images
-    print("CSV File: {}".format(metrics_csv_file))
-    if os.path.isfile(metrics_csv_file):
+    if os.path.isfile(metrics_csv_file) and len(metrics) > 0:
+        print("CSV File: {}".format(metrics_csv_file))
         cmd_params = vars(args)
         title = cmd_params.get('title')
         x_label = cmd_params.get('x_axis')
