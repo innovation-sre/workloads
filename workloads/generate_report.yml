@@ -8,7 +8,7 @@
   gather_facts: true
   remote_user: "{{orchestration_user}}"
   vars_files:
-    - vars/podvertical.yml
+    - "vars/{{ playbook_vars_file }}"
   tasks:
     # Read promql vars from template use job_name and build_number
     - name: Lookup list of prom queries
@@ -58,16 +58,10 @@
         prom_pass: "{{prom_pass_cmd.stdout.replace('\"', '')}}"
       no_log: true
 
-    # create report dir if not exist
-    - name: Create dir if not exist
-      command: "mkdir -p /tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
-      delegate_to: 127.0.0.1
-      ignore_errors: yes
-
     # path to store reports 
     - name: Set workload report file storage path
       set_fact:
-        file_path: "/tmp/scale-ci-tooling/reports/{{job_name}}-{{build_number}}"
+        file_path: "{{workspace}}/reports"
 
     # Call the python program and generate csv or plot file
     - name: Get/run reports
@@ -81,7 +75,11 @@
         --pass="{{ prom_pass }}" \
         --promql="{{item.expr}}" \
         --file_path="{{file_path}}" \
-        --file_name="{{job_name + '-' + build_number + '-' + item.name + '.csv'}}"
+        --file_name="{{job_name + '-' + build_number + '-' + item.name + '.csv'}}" \
+        --title="{{item.title}}" \
+        --description="{{item.description}}" \
+        --x_axis="{{item.x_label}}" \
+        --y_axis="{{item.y_label}}"
       with_items: 
         - "{{ promql_queries.query }}" 
       delegate_to: 127.0.0.1
