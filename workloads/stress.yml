@@ -12,6 +12,18 @@
   vars:
     workload_job: "stress"
   tasks:
+    # Get workload start time
+    - name: Get workload start time
+      shell: |
+          date +%s
+      register: starttime_set
+      when: enable_prometheus_queries
+    # Set workload start time
+    - name: Set workload starttime
+      shell: |
+        oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="{{starttime_set.stdout}}" --dry-run -o yaml | kubectl apply -f -
+      when: enable_prometheus_queries
+      
     - name: Create scale-ci-tooling directory
       file:
         path: "{{ansible_user_dir}}/scale-ci-tooling"
@@ -154,25 +166,7 @@
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
       when: job_completion_poll_attempts|int > 0
 
-    - name: Set up PromQL Queries
-      block:
-        - name: Get Start Time
-          shell: |
-            oc get configmap "scale-ci-{{job_name}}-{{build_number}}-run-info" -n scale-ci-tooling -o jsonpath="{.data.starttime}"
-          register: start_time_cmd
-        - name: Set Start time
-          set_fact:
-            start_time: "{{start_time_cmd.stdout}}"
-        - name: Set End time
-          set_fact:
-            end_time: "{{ansible_date_time.epoch}}"
-        - name: Template prometheus config
-          template:
-            src: "{{item.src}}"
-            dest: "{{item.dest}}"
-            lstrip_blocks: yes
-          with_items:
-            - src: prometheus.yml.j2
-              dest: "{{ansible_user_dir}}/scale-ci-tooling/prometheus.yml"
-        # Call the python program and generate csv or plot file
+    - name: Set up PromQL queries for workload report
+      include_role:
+        name: promql_queries 
       when: enable_prometheus_queries
