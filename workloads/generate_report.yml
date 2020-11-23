@@ -65,7 +65,7 @@
 
     # Call the python program and generate csv or plot file
     - name: Get/run reports
-      command: |
+      shell: |
         python3 "{{playbook_dir}}"/files/workload-report.py \
         --start="{{ promql_queries.starttime }}" \ 
         --end="{{ end_time }}" \
@@ -80,7 +80,5 @@
         --description="{{item.description}}" \
         --x_axis="{{item.x_label}}" \
         --y_axis="{{item.y_label}}"
-      with_items: 
+      with_items:
         - "{{ promql_queries.query }}"
-      delegate_to: 127.0.0.1
-      become: yes
