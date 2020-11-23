@@ -81,5 +81,6 @@
         --x_axis="{{item.x_label}}" \
         --y_axis="{{item.y_label}}"
       with_items: 
-        - "{{ promql_queries.query }}" 
+        - "{{ promql_queries.query }}"
       delegate_to: 127.0.0.1
+      become: yes
