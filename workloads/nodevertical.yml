@@ -12,6 +12,18 @@
   vars:
     workload_job: "nodevertical"
   tasks:
+    # Get workload start time
+    - name: Get workload start time
+      shell: |
+          date +%s
+      register: starttime_set
+      when: enable_prometheus_queries
+    # Set workload start time
+    - name: Set workload starttime
+      shell: |
+        oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="{{starttime_set.stdout}}" --dry-run -o yaml | kubectl apply -f -
+      when: enable_prometheus_queries
+
     - name: Create scale-ci-tooling directory
       file:
         path: "{{ansible_user_dir}}/scale-ci-tooling"
@@ -185,3 +197,8 @@
       until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
       when: job_completion_poll_attempts|int > 0
+
+    - name: Set up PromQL queries for workload report
+      include_role:
+        name: promql_queries 
+      when: enable_prometheus_queries
