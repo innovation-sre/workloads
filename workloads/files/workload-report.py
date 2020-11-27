@@ -8,8 +8,6 @@ from datetime import datetime, timedelta
 import urllib3
 import argparse
 import csv
-import pandas as pd
-import plotly.express as px
 import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
