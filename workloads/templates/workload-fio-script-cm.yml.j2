@@ -233,6 +233,18 @@ data:
             dnsPolicy: ClusterFirst
             securityContext: {}
             restartPolicy: Always
+            {% if workload_anti_affinity %}
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                    - key: name
+                      operator: In
+                      values:
+                      - fio
+                  topologyKey: "kubernetes.io/hostname"
+            {% endif %}
             volumes:
               - name: pbench-ssh
                 secret:
