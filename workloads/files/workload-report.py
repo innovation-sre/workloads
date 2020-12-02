@@ -22,15 +22,35 @@ try:
 except Exception as e:
     exit()
 
+# get metrics dictionary key returned by prometheus
+def getMetricKeys(metricKeys):
+    # scalar values
+    metric_name = "n/a"
+    try:
+        # if resultset is grouped by instance
+        if metricKeys.get('instance') is not None:
+            metric_name = metricKeys.get('instance')
+        # if resultset is grouped by instance but has node name
+        if metricKeys.get('node') is not None:
+            metric_name = metricKeys.get('node')
+        # if resultset is grouped by others
+        if metric_name == 'n/a' and len(metricKeys) > 0:
+            keys = list(metricKeys.keys())
+            metric_name = metricKeys.get(keys[0])
+    except:
+        metric_name = "n/a"
+
+    return metric_name
+
+
 # parseMetrics
 def parseMetrics(metrics_dictionary, result_type):
     metrics = []
     counter=0
     for row in (metrics_dictionary['data']['result']):
         print("Metrics lenght: {}".format(len(metrics_dictionary['data']['result'])))
-        keys = list(row.get('metric').keys())
         try:
-            metric_name = row['metric'].get(keys[0])
+            metric_name = getMetricKeys(row['metric'])
         except IndexError:
             metric_name = "n/a"
         if result_type == 'vector':
