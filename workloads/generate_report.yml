@@ -21,6 +21,10 @@
         promql_queries: "{{ promql_queries_output.stdout | from_yaml }}"
     
     # Get end time
+    - name: Sleep for 2 minutes to capture workloads ramp up/down metrics
+      shell: sleep 120
+
+    # Get end time
     - name: Get end time
       shell: |
           date +%s
