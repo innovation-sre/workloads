@@ -150,7 +150,7 @@ promql_queries:
     x_label: "Time in minutes"
     y_label: "Number of successful pods"
   - name: "failed-pods"
-    expr: "sum by (namespace, instance) (kube_pod_status_phase{job='kube-state-metrics', phase=~'Failed'}) > 0"
+    expr: "sum by (namespace, instance) (kube_pod_status_phase{job='kube-state-metrics', phase=~'Failed'})"
     interval: "30s"
     step: "60"
     print: "yes"
