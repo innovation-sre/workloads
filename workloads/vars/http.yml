@@ -62,6 +62,7 @@ job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
 job_url: "{{ lookup('env', 'JOB_URL')|default('', true) }}"
 build_number: "{{ lookup('env', 'BUILD_NUMBER')|default('', true) }}"
 workspace: "{{ lookup('env', 'WORKSPACE')|default('', true) }}"
+post_workload_sleep_time: "{{ lookup('env', 'POST_WORKLOAD_SLEEP_TIME')|default(180, true) | int }}"
 promql_queries:
   - name: "https-reencrypt-total"
     expr: "haproxy_server_http_responses_total{route=~'nginx-tls-reencrypt-001', exported_namespace=~'server-tls-reencrypt-[0-9]+'}"
