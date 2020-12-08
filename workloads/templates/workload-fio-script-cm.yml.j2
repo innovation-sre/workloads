@@ -62,9 +62,9 @@ data:
     echo "$(date -u) Pods for FIO I/O test created."
 
     # wait until all pods are started and then collect data
-    while [[ $(oc get pods -n {{ fiotest_basename }}0 | grep fiotest-pod | grep -cE "Running|Completed" ) -lt {{ fiotest_maxpods }}  ]] ; do
+    while [[ $(oc get pods -n {{ fiotest_basename }}0 | grep fiotest-pod | grep -cE "Running|Completed" ) -lt {{ fiotest_maxpods * fiotest_nodes_list|length }}  ]] ; do
       sleep 10
-      echo "Waiting on pods to start..."
+      echo "Waiting on pods ({{ fiotest_maxpods * fiotest_nodes_list|length }}) to start..."
     done
     ## necessary for user diffrent than root
     clients=`oc get pods --output=json -n {{ fiotest_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
@@ -123,7 +123,7 @@ data:
             - num: 1
               file: fiotesttemplate.yaml
               parameters:
-              - FIOTEST_CONTAINER_IMAGE: {{ fiotest_container_image }}
+              - FIOTEST_POD_IMAGE: {{ fiotest_pod_image }}
               - FIO_SSH_PORT: {{ fiotest_ssh_port }}
       tuningsets:
         - name: default
@@ -158,66 +158,56 @@ data:
           fadvise_hint=0
           direct={{ fiotest_direct }}
           blocksize={{ fiotest_bs }}
-          numjobs=$ncpus*2
+          numjobs=($ncpus*2)/2
+          {% if fiotest_runtime|int != 0 %}
           time_based
-          #runtime=10
+          runtime={{ fiotest_runtime }}
+          {% endif %}
           ioengine={{ fiotest_engine }}
           norandommap=1
-          exec_prerun=echo 3 > /proc/sys/vm/drop_caches
-          #group_reporting
+          {% if workload_job_privileged| bool %}
+          #exec_prerun=echo 3 > /host-proc/sys/vm/drop_caches
+          {% endif %}
 
-          [pods-{{ fiotest_maxpods }}-{{ fiotest_storageclass }}-4]
+          [test-multi-file-io-4]
           new_group
           iodepth=4
           nrfiles={{ fiotest_samples }}
 
-          [pods-{{ fiotest_maxpods }}-{{ fiotest_storageclass }}-8]
+          [test-multi-file-io-8]
           new_group
           iodepth=8
           nrfiles={{ fiotest_samples }}
 
-          [pods-{{ fiotest_maxpods }}-{{ fiotest_storageclass }}-16]
+          [test-multi-file-io-16]
           new_group
           iodepth=16
           nrfiles={{ fiotest_samples }}
         fiotest.sh: |
           #!/bin/bash
+          set -xe
+          sleep 1h
           export CONFIG=/opt/pbench-agent/config/pbench-agent.cfg
           source /opt/pbench-agent/profile
           export PATH="/opt/rh/rh-python36/root/usr/bin/:$PATH"
           echo "FIO Version $(fio --version)"
           echo "Path set for python3"
           env
-          git clone https://github.com/innovation-sre/fio-parser.git
+          ls /mnt/pvcmount/
+          export GIT_COMMITTER_NAME="scale-ci"
+          export GIT_COMMITTER_EMAIL="scale-ci@redhat.com"
+          rm -rf /mnt/pvcmount/fio-parser
+          git clone https://github.com/innovation-sre/fio-parser.git /mnt/pvcmount/fio-parser
           echo "------FIO PROFILE (start)------"
           cat /root/workload/test.fio
           echo "------FIO PROFILE (end)------"
-          fio /root/workload/test.fio --minimal | python3 fio-parser/fio-parser.py
-
-          #for i in $(seq 1 {{ fiotest_samples }}); do
-          #    echo "Sampling $i"
-          #    cd /mnt/pvcmount
-          #    {% if fiotest_minimal %}
-          #    fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
-          #     --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
-          #     --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" \
-          #     --minimal --output="fio-output"
-          #    fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
-          #     --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
-          #     --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" --minimal \
-          #     --output="fio-output"
-          #    {% else %}
-          #    fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
-          #     --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
-          #     --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" --minimal \
-          #     --output="fio-output"
-          #    {% endif %}
-          #     echo "Output for $HOSTNAME-$BUILD_NUMBER"
-          #     echo "------"
-          #     cat /mnt/pvcmount/fio-output
-          #     echo "------"
-          #     sleep 1800
-          #done
+          echo "Starting fio"
+          fio /root/workload/test.fio --minimal --output="/mnt/pvcmount/fio-output"
+          echo "Completed fio"
+          echo "------FIO RESULTS (start)------"
+          cat /mnt/pvcmount/fio-output
+          echo "------FIO RESULTS (end)------"
+          python3 /mnt/pvcmount/fio-parser/fio-parser.py /mnt/pvcmount/fio-output
     parameters:
     - name: IDENTIFIER
       description: Number to append to the name of resources
@@ -233,6 +223,10 @@ data:
     labels:
       name: fiotest-test
     objects:
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: useroot
     {% for fiotest_node in fiotest_nodes_list %}
     - apiVersion: v1
       kind: PersistentVolumeClaim
@@ -259,6 +253,8 @@ data:
           workload: fio
         name: fiotest-pod-{{loop.index}}
       spec:
+        completions: {{ fiotest_maxpods }}
+        parallelism: {{ fiotest_parallelism }}
         template:
           metadata:
             labels:
@@ -268,7 +264,7 @@ data:
             hostNetwork: false
             containers:
               - name: "fio"
-                image: "{{ fiotest_container_image }}"
+                image: "{{ fiotest_pod_image }}"
                 imagePullPolicy: IfNotPresent
                 command: ["/root/workload/fiotest.sh"]
                 env:
@@ -276,7 +272,30 @@ data:
                     value: "{{ fiotest_ssh_port }}"
                   - name: SSH_PORT
                     value: "{{ fiotest_ssh_port }}"
+                  - name: BUILD_NUMBER
+                    value: "{{ build_number }}"
+                  - name: FIOTEST_TESTTYPE
+                    value: "{{ fiotest_testtype }}"
+                  - name: FIOTEST_MAXPODS
+                    value: "{{ fiotest_maxpods }}"
+                  - name: FIOTEST_STORAGE_SIZE
+                    value: "{{ fiotest_storage_size }}"
+                  - name: FIOTEST_STORAGECLASS
+                    value: "{{ fiotest_storageclass }}"
+                  - name: FIOTEST_BS
+                    value: "{{ fiotest_bs }}"
+                  - name: FIOTEST_ENGINE
+                    value: "{{ fiotest_engine }}"
+                  - name: FIOTEST_RUNTIME
+                    value: "{{ fiotest_runtime }}"
+                  - name: FIOTEST_FILESIZE
+                    value: "{{ fiotest_filesize }}"
+                {% if workload_job_privileged| bool %}
+                securityContext:
+                    runAsUser: 0
+                {% else %}
                 securityContext: {}
+                {% endif %}
                 volumeMounts:
                   - name: pbench-ssh
                     mountPath: /.ssh/authorized_keys
@@ -290,12 +309,19 @@ data:
                     mountPath: "/mnt/pvcmount"
                   - name: fio-script
                     mountPath: /root/workload/
+                  {% if workload_job_privileged| bool %}
+                  - name: host-proc-fs
+                    mountPath: /host-proc/
+                  {% endif %}
             dnsPolicy: ClusterFirst
             securityContext: {}
             restartPolicy: OnFailure
             {% if workload_anti_affinity %}
             nodeSelector:
               kubernetes.io/hostname: '{{ fiotest_node }}'
+            {% endif %}
+            {% if workload_job_privileged| bool %}
+            serviceAccountName: useroot
             {% endif %}
             volumes:
               - name: pbench-ssh
@@ -311,6 +337,11 @@ data:
                 configMap:
                   name: fio-script
                   defaultMode: 0777
+              {% if workload_job_privileged| bool %}
+              - name: host-proc-fs
+                hostPath:
+                  path: /proc
+              {% endif %}
     {% endfor %}
     parameters:
     - name: IDENTIFIER
@@ -320,7 +351,7 @@ data:
       description: What port should the sshd process in the fio container listen on
       value: "2022"
       required: true
-    - name: FIOTEST_CONTAINER_IMAGE
+    - name: FIOTEST_POD_IMAGE
       description: Which fio container image to be used in this pod
       value: "quay.io/openshift-scale/scale-ci-fio"
       required: true

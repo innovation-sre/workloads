@@ -167,13 +167,12 @@
       shell: |
         oc create serviceaccount useroot -n scale-ci-tooling
         oc adm policy add-scc-to-user privileged -z useroot -n scale-ci-tooling
-      when: enable_pbench_agents|bool
 
-    - name: Add serviceaccount for useroot when pbench is not used
+    - name: Create fiotest service account
       shell: |
-        oc delete serviceaccount -n scale-ci-tooling useroot
-        oc create serviceaccount useroot -n scale-ci-tooling
-      when: not enable_pbench_agents|bool
+        oc --namespace= --config= adm new-project fiotest0
+        oc create serviceaccount useroot -n fiotest0
+        oc adm policy add-scc-to-user privileged -z useroot -n fiotest0
 
     - name: Create/replace kubeconfig secret
       shell: |
