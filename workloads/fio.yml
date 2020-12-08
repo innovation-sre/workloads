@@ -17,6 +17,44 @@
         path: "{{ansible_user_dir}}/scale-ci-tooling"
         state: directory
 
+    # Get workload start time
+    - name: Get workload start time
+      shell: |
+        date +%s
+      register: starttime_set
+      when: enable_prometheus_queries
+
+    - name: Display workload start time from date
+      debug:
+        msg: "{{ starttime_set }}"
+      when: enable_prometheus_queries
+
+    - name: Display workload start time
+      debug:
+        msg: "{{ ansible_date_time.epoch }}"
+      when: enable_prometheus_queries
+
+    - name: Display workload start time - 120 seconds
+      debug:
+        msg: "{{ ansible_date_time.epoch | int - ( 60 * 2 ) }}"
+      when: enable_prometheus_queries
+
+#    - name: Display type #2
+#      debug:
+#        msg: "{{ type(ansible_date_time.epoch) }}"
+#      when: enable_prometheus_queries
+#
+#    - name: Display type #2
+#      debug:
+#        msg: "{{ type(starttime_set)  }}"
+#      when: enable_prometheus_queries
+
+    # Set workload start time
+    - name: Set workload starttime
+      shell: |
+        oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="{{starttime_set.stdout}}" --dry-run -o yaml | kubectl apply -f -
+      when: enable_prometheus_queries
+
     - name: Copy workload files
       copy:
         src: "{{item.src}}"
@@ -183,3 +221,8 @@
       until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
       when: job_completion_poll_attempts|int > 0
+
+    - name: Set up PromQL queries for workload report
+      include_role:
+        name: promql_queries
+      when: enable_prometheus_queries
