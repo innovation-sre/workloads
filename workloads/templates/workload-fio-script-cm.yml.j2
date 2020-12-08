@@ -149,6 +149,37 @@ data:
       metadata:
         name: fio-script
       data:
+        test.fio: |
+          [global]
+          rw={{ fiotest_testtype }}
+          rwmixread={{ fiotest_rwmixread }}
+          size={{ fiotest_filesize }}
+          directory=/mnt/pvcmount
+          fadvise_hint=0
+          direct={{ fiotest_direct }}
+          blocksize={{ fiotest_bs }}
+          numjobs=$ncpus*2
+          time_based
+          #runtime=10
+          ioengine={{ fiotest_engine }}
+          norandommap=1
+          exec_prerun=echo 3 > /proc/sys/vm/drop_caches
+          #group_reporting
+
+          [pods-{{ fiotest_maxpods }}-{{ fiotest_storageclass }}-4]
+          new_group
+          iodepth=4
+          nrfiles={{ fiotest_samples }}
+
+          [pods-{{ fiotest_maxpods }}-{{ fiotest_storageclass }}-8]
+          new_group
+          iodepth=8
+          nrfiles={{ fiotest_samples }}
+
+          [pods-{{ fiotest_maxpods }}-{{ fiotest_storageclass }}-16]
+          new_group
+          iodepth=16
+          nrfiles={{ fiotest_samples }}
         fiotest.sh: |
           #!/bin/bash
           export CONFIG=/opt/pbench-agent/config/pbench-agent.cfg
@@ -156,27 +187,37 @@ data:
           export PATH="/opt/rh/rh-python36/root/usr/bin/:$PATH"
           echo "FIO Version $(fio --version)"
           echo "Path set for python3"
+          env
+          git clone https://github.com/innovation-sre/fio-parser.git
+          echo "------FIO PROFILE (start)------"
+          cat /root/workload/test.fio
+          echo "------FIO PROFILE (end)------"
+          fio /root/workload/test.fio --minimal | python3 fio-parser/fio-parser.py
 
-          for i in $(seq 1 {{ fiotest_samples }}); do
-              echo "Sampling $i"
-              cd /mnt/pvcmount
-              {% if fiotest_minimal %}
-              fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
-               --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
-               --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" \
-               --minimal --output="fio-output"
-              {% else %}
-              fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
-               --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
-               --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" --minimal \
-               --output="fio-output"
-              {% endif %}
-               echo "Output for $HOSTNAME-$BUILD_NUMBER"
-               echo "------"
-               cat /mnt/pvcmount/fio-output
-               echo "------"
-               sleep 1800
-          done
+          #for i in $(seq 1 {{ fiotest_samples }}); do
+          #    echo "Sampling $i"
+          #    cd /mnt/pvcmount
+          #    {% if fiotest_minimal %}
+          #    fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
+          #     --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
+          #     --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" \
+          #     --minimal --output="fio-output"
+          #    fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
+          #     --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
+          #     --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" --minimal \
+          #     --output="fio-output"
+          #    {% else %}
+          #    fio --rw={{ fiotest_testtype }} --ioengine={{ fiotest_engine }} --bs={{ fiotest_bs }} --runtime={{ fiotest_runtime }} \
+          #     --iodepth={{ fiotest_iodepth }} --direct={{ fiotest_direct }} --size={{ fiotest_filesize }} \
+          #     --name="{{ fiotest_testtype }}-pods{{ fiotest_maxpods }}-storageclass-{{ fiotest_storageclass }}-{{ fiotest_description }}" --minimal \
+          #     --output="fio-output"
+          #    {% endif %}
+          #     echo "Output for $HOSTNAME-$BUILD_NUMBER"
+          #     echo "------"
+          #     cat /mnt/pvcmount/fio-output
+          #     echo "------"
+          #     sleep 1800
+          #done
     parameters:
     - name: IDENTIFIER
       description: Number to append to the name of resources

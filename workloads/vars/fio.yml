@@ -72,6 +72,10 @@ workload_script_config: "scale-ci-fio-script"
 workload_anti_affinity: "{{ lookup('env', 'WORKLOAD_ANTI_AFFINITY')|default(true, true)|bool|lower }}"
 workload_job_retries: 1
 
+### TODO: Add for FIO
+fiotest_rwmixread: "{{ lookup('env', 'FIOTEST_RWMIXREAD')|default(80, true)|int }}"
+
+####
 #Prometheus vars
 workload_name: "fio"
 job_name: "{{ lookup('env', 'JOB_NAME')|lower()|default('', true) }}"
