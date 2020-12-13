@@ -93,7 +93,7 @@
 
     - name: Get the nodes
       shell: |
-        oc get nodes -l node-role.kubernetes.io/worker= --no-headers | head -n {{fiotest_maxpods}} | awk '{print $1}'
+        oc get nodes -l node-role.kubernetes.io/workload="" --no-headers | head -n {{fiotest_max_nodes}} | awk '{print $1}'
       register: fiotest_nodes
       when: workload_nodeselector == ""
     - name: show lines
@@ -106,16 +106,18 @@
 
     - name: Get the nodes (Override)
       shell: |
-        oc get nodes -l node-role.kubernetes.io/worker=,{{workload_nodeselector}} --no-headers | head -n {{fiotest_maxpods}} | awk '{print $1}'
+        oc get nodes -l node-role.kubernetes.io/workload="",{{workload_nodeselector}} --no-headers | head -n {{fiotest_max_nodes}} | awk '{print $1}'
       register: fiotest_nodes
       when: workload_nodeselector != ""
-    - name: show lines
-      debug:
-        msg: "Lines {{fiotest_nodes}}"
+
     - name: Create Node List (Override)
       set_fact:
         fiotest_nodes_list: "{{fiotest_nodes.stdout_lines|list}}"
       when: workload_nodeselector != ""
+
+    - name: show fiotest_nodes_list
+      debug:
+        msg: "Nodes {{fiotest_nodes_list}} {{fiotest_nodes_list|length}} ({{fiotest_nodes_list|length * fiotest_completions_per_job|int}})"
 
     - name: Template workload templates
       template:

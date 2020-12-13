@@ -62,9 +62,9 @@ data:
     echo "$(date -u) Pods for FIO I/O test created."
 
     # wait until all pods are started and then collect data
-    while [[ $(oc get pods -n {{ fiotest_basename }}0 | grep fiotest-pod | grep -cE "Running|Completed" ) -lt {{ fiotest_maxpods * fiotest_nodes_list|length }}  ]] ; do
+    while [[ $(oc get pods -n {{ fiotest_basename }}0 | grep fiotest-pod | grep -cE "Running|Completed" ) -lt {{ fiotest_nodes_list|length * fiotest_completions_per_job|int }} ]] ; do
       sleep 10
-      echo "Waiting on pods ({{ fiotest_maxpods * fiotest_nodes_list|length }}) to start..."
+      echo "Waiting on pods ({{ fiotest_nodes_list|length * fiotest_completions_per_job|int }}) to start..."
     done
     ## necessary for user diffrent than root
     clients=`oc get pods --output=json -n {{ fiotest_basename }}0 | jq -r '[.items[].status.podIP] | join(",")'`
@@ -158,7 +158,7 @@ data:
           fadvise_hint=0
           direct={{ fiotest_direct }}
           blocksize={{ fiotest_bs }}
-          numjobs=($ncpus*2)/2
+          numjobs=($ncpus)/2
           {% if fiotest_runtime|int != 0 %}
           time_based
           runtime={{ fiotest_runtime }}
@@ -186,7 +186,6 @@ data:
         fiotest.sh: |
           #!/bin/bash
           set -xe
-          sleep 1h
           export CONFIG=/opt/pbench-agent/config/pbench-agent.cfg
           source /opt/pbench-agent/profile
           export PATH="/opt/rh/rh-python36/root/usr/bin/:$PATH"
@@ -253,7 +252,7 @@ data:
           workload: fio
         name: fiotest-pod-{{loop.index}}
       spec:
-        completions: {{ fiotest_maxpods }}
+        completions: {{ fiotest_completions_per_job }}
         parallelism: {{ fiotest_parallelism }}
         template:
           metadata:
@@ -290,6 +289,10 @@ data:
                     value: "{{ fiotest_runtime }}"
                   - name: FIOTEST_FILESIZE
                     value: "{{ fiotest_filesize }}"
+                  - name: FIOTEST_NODE
+                    value: "{{ fiotest_node }}"
+                  - name: FIOTEST_JOB_ID
+                    value: "fiotest-pod-{{loop.index}}"
                 {% if workload_job_privileged| bool %}
                 securityContext:
                     runAsUser: 0
@@ -308,10 +311,10 @@ data:
                   - name: persistentvolume
                     mountPath: "/mnt/pvcmount"
                   - name: fio-script
-                    mountPath: /root/workload/
+                    mountPath: "/root/workload/"
                   {% if workload_job_privileged| bool %}
                   - name: host-proc-fs
-                    mountPath: /host-proc/
+                    mountPath: "/host-proc/"
                   {% endif %}
             dnsPolicy: ClusterFirst
             securityContext: {}
