@@ -45,7 +45,7 @@
 
     - name: Ensure prometheus-user-workload and expose a route
       shell:
-        oc create route passthrough prometheus-user-workload --service=prometheus-user-workload --namespace openshift-user-workload-monitoring --dry-run -o yaml | oc apply -f -
+        oc create route passthrough prometheus-user-workload --service=prometheus-user-workload --namespace openshift-user-workload-monitoring --dry-run -o yaml | oc apply --namespace openshift-user-workload-monitoring -f -
 
     - name: Get additional endpoint/urls
       shell: |
