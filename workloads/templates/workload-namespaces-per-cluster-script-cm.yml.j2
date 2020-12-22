@@ -111,7 +111,6 @@ data:
         - num: ${NAMESPACES_PER_CLUSTER_COUNT}
           basename: ${NAMESPACES_PER_CLUSTER_BASENAME}
           ifexists: delete
-          nodeselector: "node-role.kubernetes.io/worker="
           {% if workload_nodeselector %}
           nodeselector: {{ workload_nodeselector }}
           {% else %}
@@ -136,7 +135,7 @@ data:
               pause: ${NAMESPACES_PER_CLUSTER_PAUSE}
               timeout: ${NAMESPACES_PER_CLUSTER_TS_TIMEOUT}
             rate_limit:
-              delay: 0
+              delay: 1000
   bc-imagestream-template.yaml: |
     ---
     Kind: Template
