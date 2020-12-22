@@ -19,11 +19,10 @@
       register: starttime_set
       when: enable_prometheus_queries
 
-    #- name: Get workload start time
-    #  debug:
-    #    #msg: "{{ strftime( ( ansible_date_time.epoch | int ) - ( 60 * 2 )  ) }}"
-    #    msg: "{{ ansible_date_time.epoch | int - ( 60 * 2 )  ) }}"
-    #  when: enable_prometheus_queries
+    - name: Get workload start time
+      debug:
+        msg: "{{ ansible_date_time.epoch | int - ( 60 * 2 ) }}"
+      when: enable_prometheus_queries
 
     - name: Set workload starttime
       shell: |

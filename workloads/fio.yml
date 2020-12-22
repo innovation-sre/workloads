@@ -17,6 +17,44 @@
         path: "{{ansible_user_dir}}/scale-ci-tooling"
         state: directory
 
+    # Get workload start time
+    - name: Get workload start time
+      shell: |
+        date +%s
+      register: starttime_set
+      when: enable_prometheus_queries
+
+    - name: Display workload start time from date
+      debug:
+        msg: "{{ starttime_set.stdout }}"
+      when: enable_prometheus_queries
+
+    - name: Display workload start time
+      debug:
+        msg: "{{ ansible_date_time.epoch }}"
+      when: enable_prometheus_queries
+
+    - name: Display workload start time - 120 seconds
+      debug:
+        msg: "{{ ansible_date_time.epoch | int - ( 60 * 2 ) }}"
+      when: enable_prometheus_queries
+
+#    - name: Display type #2
+#      debug:
+#        msg: "{{ type(ansible_date_time.epoch) }}"
+#      when: enable_prometheus_queries
+#
+#    - name: Display type #2
+#      debug:
+#        msg: "{{ type(starttime_set)  }}"
+#      when: enable_prometheus_queries
+
+    # Set workload start time
+    - name: Set workload starttime
+      shell: |
+        oc create configmap -n scale-ci-tooling scale-ci-{{ job_name }}-{{ build_number }}-run-info --from-literal=starttime="{{starttime_set.stdout}}" --dry-run -o yaml | kubectl apply -f -
+      when: enable_prometheus_queries
+
     - name: Copy workload files
       copy:
         src: "{{item.src}}"
@@ -52,6 +90,34 @@
             snafu_cluster_name: cluster_name.stdout
           when: cluster_name is succeeded
       when: snafu_cluster_name == ""
+
+    - name: Get the nodes
+      shell: |
+        oc get nodes -l node-role.kubernetes.io/workload="" --no-headers | head -n {{fiotest_max_nodes}} | awk '{print $1}'
+      register: fiotest_nodes
+      when: workload_nodeselector == ""
+    - name: show lines
+      debug:
+        msg: "Lines {{fiotest_nodes}}"
+    - name: Create Node List
+      set_fact:
+        fiotest_nodes_list: "{{fiotest_nodes.stdout_lines|list}}"
+      when: workload_nodeselector == ""
+
+    - name: Get the nodes (Override)
+      shell: |
+        oc get nodes -l node-role.kubernetes.io/workload="",{{workload_nodeselector}} --no-headers | head -n {{fiotest_max_nodes}} | awk '{print $1}'
+      register: fiotest_nodes
+      when: workload_nodeselector != ""
+
+    - name: Create Node List (Override)
+      set_fact:
+        fiotest_nodes_list: "{{fiotest_nodes.stdout_lines|list}}"
+      when: workload_nodeselector != ""
+
+    - name: show fiotest_nodes_list
+      debug:
+        msg: "Nodes {{fiotest_nodes_list}} {{fiotest_nodes_list|length}} ({{fiotest_nodes_list|length * fiotest_completions_per_job|int}})"
 
     - name: Template workload templates
       template:
@@ -103,13 +169,12 @@
       shell: |
         oc create serviceaccount useroot -n scale-ci-tooling
         oc adm policy add-scc-to-user privileged -z useroot -n scale-ci-tooling
-      when: enable_pbench_agents|bool
 
-    - name: Add serviceaccount for useroot when pbench is not used
+    - name: Create fiotest service account
       shell: |
-        oc delete serviceaccount -n scale-ci-tooling useroot
-        oc create serviceaccount useroot -n scale-ci-tooling
-      when: not enable_pbench_agents|bool
+        oc --namespace= --config= adm new-project fiotest0
+        oc create serviceaccount useroot -n fiotest0
+        oc adm policy add-scc-to-user privileged -z useroot -n fiotest0
 
     - name: Create/replace kubeconfig secret
       shell: |
@@ -157,3 +222,8 @@
       until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
       when: job_completion_poll_attempts|int > 0
+
+    - name: Set up PromQL queries for workload report
+      include_role:
+        name: promql_queries
+      when: enable_prometheus_queries

@@ -138,12 +138,13 @@ spec:
 {% endif %}
 {% if workload_job_node_selector %}
       nodeSelector:
-        node-role.kubernetes.io/workload: ""
+        node-role.kubernetes.io/workload-orchestrator: ""
 {% endif %}
 {% if workload_job_taint| bool %}
       tolerations:
-      - key: "role"
-        value: "workload"
-        operator: "Equal"
+      - key: "node-role.kubernetes.io/workload-orchestrator"
+        operator: "Exists"
+        #operator: "Equal"
+        #value: "true"
         effect: "NoSchedule"
 {% endif %}

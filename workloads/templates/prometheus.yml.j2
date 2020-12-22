@@ -9,4 +9,6 @@ query:
   description: {{query.description}}
   x_label: {{query.x_label}}
   y_label: {{query.y_label}}
+  prometheus_server_type: {{query.prometheus_server_type|default('default')}}
+  prometheus_server_index: {{query.prometheus_server_index|default(0)}}
 {% endfor %}

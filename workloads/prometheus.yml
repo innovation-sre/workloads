@@ -12,6 +12,10 @@
   vars:
     workload_job: "prometheus-scale"
   tasks:
+    - name: Show workload start time
+      debug:
+        msg: "{{ starttime_set }}"
+
     - name: Create scale-ci-tooling directory
       file:
         path: "{{ansible_user_dir}}/scale-ci-tooling"

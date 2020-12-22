@@ -36,15 +36,33 @@
         end_time: "{{endtime_set.stdout}}"
     
     # Prometheus server
-    - name: Get Promethues endpoint/url
+    - name: Get default Prometheus endpoint/url
       shell: |
         oc get route prometheus-k8s -n openshift-monitoring -o jsonpath="{.spec.host}"
       register: prom_url_cmd
-    
+
+    - name: Create cluster role, binding and sa
+      shell: |
+        oc create clusterrole scale-ci-prometheus-reader-role --verb=get --resource=namespaces --dry-run -o yaml | oc apply -f -
+        oc create sa --namespace scale-ci-tooling scale-ci-prometheus-reader --dry-run -o yaml | oc apply -f -
+        oc create clusterrolebinding scale-ci-prometheus-reader-role-binding --clusterrole=scale-ci-prometheus-reader-role --serviceaccount=scale-ci-tooling:scale-ci-prometheus-reader --dry-run -o yaml | oc apply -f -
+
+    - name: Ensure prometheus-user-workload and expose a route
+      shell:
+        oc create route passthrough prometheus-user-workload --service=prometheus-user-workload --namespace openshift-user-workload-monitoring --dry-run -o yaml | oc apply --namespace openshift-user-workload-monitoring -f -
+
+    - name: Get additional endpoint/urls
+      shell: |
+        oc get route {{item}} -o jsonpath="{.spec.host}"
+      with_items:
+        - "prometheus-user-workload --namespace openshift-user-workload-monitoring"
+      register: prom_secondary_urls_cmd
+
     - name: Set Prometheus endpoint/url
       set_fact:
         prom_url: "{{prom_url_cmd.stdout}}"
-    
+        prom_secondary_urls: "{{prom_secondary_urls_cmd.results | map(attribute='stdout') | map('regex_replace', '(.*)', 'https://\\1/') | join(',') }}"
+
     # Prometheus user
     - name: Set Prometheus user
       set_fact:
@@ -55,11 +73,22 @@
       shell: |
         {%raw%}oc get secrets -n openshift-monitoring grafana-datasources -o go-template='{{index .data "prometheus.yaml"}}' | base64 --decode | jq '.datasources[0].basicAuthPassword'{%endraw%}
       register: prom_pass_cmd
-    
+
+
+    - name: Get Prometheus token
+      shell: |
+        {%raw%}oc --namespace scale-ci-tooling serviceaccounts get-token scale-ci-prometheus-reader{%endraw%}
+      register: prom_token_cmd
+
     # Set prom pass
     - name: Set Prometheus pass
       set_fact:
         prom_pass: "{{prom_pass_cmd.stdout.replace('\"', '')}}"
+      no_log: true
+
+    - name: Set Prometheus token
+      set_fact:
+        prom_token: "{{prom_token_cmd.stdout.replace('\"', '')}}"
       no_log: true
 
     # path to store reports 
@@ -75,9 +104,13 @@
         --end="{{ end_time }}" \
         --step="{{item.step}}" \
         --url="https://{{prom_url}}" \
+        --secondary_urls="{{prom_secondary_urls|default("")}}" \
         --user="{{ prom_user }}" \
         --pass="{{ prom_pass }}" \
+        --token="{{ prom_token }}" \
         --promql="{{item.expr}}" \
+        --prometheus_server_type="{{item.prometheus_server_type}}" \
+        --prometheus_server_index="{{item.prometheus_server_index}}" \
         --file_path="{{file_path}}" \
         --file_name="{{job_name + '-' + build_number + '-' + item.name + '.csv'}}" \
         --title="{{item.title}}" \
