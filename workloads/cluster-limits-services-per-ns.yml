@@ -157,7 +157,7 @@
       register: job_json
       retries: "{{job_completion_poll_attempts}}"
       delay: 10
-      until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`1`')
+      until: job_json.stdout | from_json | json_query('status.succeeded==`1` || status.failed==`"{{workload_job_retries | default(6)}}"`')
       failed_when: job_json.stdout | from_json | json_query('status.succeeded==`1`') == false
       when: job_completion_poll_attempts|int > 0
 

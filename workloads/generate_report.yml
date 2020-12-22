@@ -45,8 +45,7 @@
 
     - name: Ensure prometheus-user-workload and expose a route
       shell:
-        oc create route passthrough prometheus-user-workload --service=prometheus-user-workload --namespace openshift-user-workload-monitoring --dry-run -o yaml | oc apply -f -
-      when: prometheus_user_workload_enabled is defined and prometheus_user_workload_enabled
+        oc create route passthrough prometheus-user-workload --service=prometheus-user-workload --namespace openshift-user-workload-monitoring --dry-run -o yaml | oc apply --namespace openshift-user-workload-monitoring -f -
 
     - name: Get additional endpoint/urls
       shell: |
@@ -101,7 +100,7 @@
         --end="{{ end_time }}" \
         --step="{{item.step}}" \
         --url="https://{{prom_url}}" \
-        --secondary_urls="{{prom_secondary_urls}}" \
+        --secondary_urls="{{prom_secondary_urls|default("")}}" \
         --user="{{ prom_user }}" \
         --pass="{{ prom_pass }}" \
         --token="{{ prom_token }}" \
