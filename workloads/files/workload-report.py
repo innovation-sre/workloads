@@ -158,10 +158,36 @@ def getMetrics(url, **request_parameters):
     except requests.exceptions.RequestException as re:
         print(re)
 
+# convert timestamp to H:M:S
+def convertTimestamp(timestamp):
+    ts = datetime.datetime.fromtimestamp(int(timestamp)).isoformat()
+    ts = str(ts).split('T')[1]
+    return ts
+
+# get each time or point for x axis
+def getXAxisTime(start, end):
+    ts = []
+    while start < end:
+        ts.append(convertTimestamp(start))
+        start=start+60
+    return ts
+
+# Set value for undefined data point timestamp
+def mergeMetrics(list1, list2, start, end):
+    merged = dict(zip(list1, list2))
+    ts = getXAxisTime(int(start), int(end))
+    mergedMetrics = {}
+    for i in ts:
+        if merged.get(i) is not None:
+            mergedMetrics[i] = merged.get(i)
+        else:
+            mergedMetrics[i] = 0.0
+
+    return mergedMetrics
+
 
 # Plot metrics graph from csv
-
-def plotGraph(csv_file, plot_title, x_label, y_label, image_file):
+def plotGraph(csv_file, plot_title, x_label, y_label, image_file, start_time=0, end_time=0):
     x_axis = []
     y_axis = []
     timestamp = []
@@ -199,14 +225,15 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file):
                         tmp.append(0.0)
                     data_set[y_axis_value] = tmp
 
-    # Draw/plat chart
+    # Draw/plot chart
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     x_label = "Time <from: " + timestamp[0] + " to " + timestamp[-1] + ">"
 
     for k, v in data_set.items():
         print(k, v)
+        merged_data = mergeMetrics(timestamp, v, start_time, end_time)
         fig.add_trace(
-            go.Scatter(x=timestamp, y=v, name=k, mode="lines+markers", line_shape='spline', connectgaps=True),
+            go.Scatter(x=list(merged_data.keys()), y=list(merged_data.values()), name=k, mode="lines+markers", line_shape='spline', connectgaps=True),
             secondary_y=True,
         )
 
@@ -297,9 +324,11 @@ if __name__ == '__main__':
         title = cmd_params.get('title')
         x_label = cmd_params.get('x_axis')
         y_label = cmd_params.get('y_axis')
+        start = cmd_params.get('start')
+        end = cmd_params.get('end')
         description = cmd_params.get('description')
         file_path = cmd_params.get('file_path')
         file_name = cmd_params.get('file_name').split('.', 1)[0] + '-graph.png'
         image_file = os.path.join(file_path, file_name)
         print("Image File: {}".format(image_file))
-        plotGraph(metrics_csv_file, title, x_label, y_label, image_file)
+        plotGraph(metrics_csv_file, title, x_label, y_label, image_file, start_time=start, end_time=end)
