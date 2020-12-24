@@ -88,6 +88,11 @@ data:
   DEPLOYMENTS_PER_NS_BASENAME: "{{deployments_per_ns_basename}}"
   DEPLOYMENTS_PER_NS_COUNT: "{{deployments_per_ns_count}}"
   DEPLOYMENTS_PER_NS_POD_IMAGE: "{{deployments_per_ns_pod_image}}"
+  DEPLOYMENTS_PER_NS_STEPSIZE: "{{deployments_per_ns_stepsize}}"
+  DEPLOYMENTS_PER_NS_PAUSE: "{{deployments_per_ns_pause}}"
+  DEPLOYMENTS_PER_NS_TS_TIMEOUT: "{{deployments_per_ns_ts_timeout}}"
+  DEPLOYMENTS_PER_NS_DELAY: "{{deployments_per_ns_delay}}"
+  DEPLOYMENTS_PER_NS_INITIAL_DELAY: "{{deployments_per_ns_initial_delay}}"
   AZURE_AUTH: "{{azure_auth|bool|lower}}"
 {% elif workload_job == "namespaces-per-cluster" %}
   PBENCH_INSTRUMENTATION: "{{pbench_instrumentation|bool|lower}}"
@@ -99,6 +104,8 @@ data:
   NAMESPACES_PER_CLUSTER_STEPSIZE: "{{namespaces_per_cluster_stepsize}}"
   NAMESPACES_PER_CLUSTER_PAUSE: "{{namespaces_per_cluster_pause}}"
   NAMESPACES_PER_CLUSTER_TS_TIMEOUT: "{{namespaces_per_cluster_ts_timeout}}"
+  NAMESPACES_PER_CLUSTER_DELAY: "{{namespaces_per_cluster_delay}}"
+  NAMESPACES_PER_CLUSTER_INITIAL_DELAY: "{{namespaces_per_cluster_initial_delay}}"
   EXPECTED_NAMESPACES_PER_CLUSTER_DURATION: "{{expected_namespaces_per_cluster_duration}}"
   AZURE_AUTH: "{{azure_auth|bool|lower}}"
 {% elif workload_job == "services-per-namespace" %}
@@ -110,6 +117,11 @@ data:
   SERVICES_PER_NAMESPACE_PROJECTS: "{{services_per_namespace_projects}}"
   SERVICES_PER_NAMESPACE_COUNT: "{{services_per_namespace_count}}"
   EXPECTED_SERVICES_PER_NAMESPACE_DURATION: "{{expected_services_per_namespace_duration}}"
+  SERVICES_PER_NAMESPACE_STEPSIZE: "{{services_per_namespace_stepsize}}"
+  SERVICES_PER_NAMESPACE_PAUSE: "{{services_per_namespace_pause}}"
+  SERVICES_PER_NAMESPACE_TS_TIMEOUT: "{{services_per_namespace_ts_timeout}}"
+  SERVICES_PER_NAMESPACE_DELAY: "{{services_per_namespace_delay}}"
+  SERVICES_PER_NAMESPACE_INITIAL_DELAY: "{{services_per_namespace_initial_delay}}"
   AZURE_AUTH: "{{azure_auth|bool|lower}}"
 {% elif workload_job == "stress" %}
   STRESS_CONTAINER_IMAGE: "{{stress_container_image}}"

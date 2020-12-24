@@ -46,6 +46,11 @@ services_per_namespace_cleanup: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_CLEANU
 services_per_namespace_basename: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_BASENAME')|default('services-per-namespace', true) }}"
 services_per_namespace_projects: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_PROJECTS')|default(2, true)|int }}"
 services_per_namespace_count:  "{{ lookup('env', 'SERVICES_PER_NAMESPACE_COUNT')|default(100, true)|int }}"
+services_per_namespace_stepsize: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_STEPSIZE')|default(50, true) }}"
+services_per_namespace_pause: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_PAUSE')|default(60, true) }}"
+services_per_namespace_ts_timeout: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_TS_TIMEOUT')|default(600, true) }}"
+services_per_namespace_initial_delay: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_INITIAL_DELAY')|default(1000, true) }}"
+services_per_namespace_delay: "{{ lookup('env', 'SERVICES_PER_NAMESPACE_DELAY')|default(1000, true) }}"
 
 # Pass/fail criteria
 expected_services_per_namespace_duration: "{{ lookup('env', 'EXPECTED_SERVICES_PER_NAMESPACE_DURATION')|default(600, true)|int }}"

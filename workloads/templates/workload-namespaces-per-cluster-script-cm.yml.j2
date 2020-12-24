@@ -135,8 +135,8 @@ data:
               pause: ${NAMESPACES_PER_CLUSTER_PAUSE}
               timeout: ${NAMESPACES_PER_CLUSTER_TS_TIMEOUT}
             rate_limit:
-              delay: 1000
-              initialdelay: 1000
+              delay: ${NAMESPACES_PER_CLUSTER_DELAY}
+              initialdelay: ${NAMESPACES_PER_CLUSTER_INITIAL_DELAY}
   bc-imagestream-template.yaml: |
     ---
     Kind: Template

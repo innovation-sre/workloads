@@ -49,6 +49,11 @@ deployments_per_ns_cleanup: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_CLEANUP')|defa
 deployments_per_ns_basename: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_BASENAME')|default('deployments-per-ns', true) }}"
 deployments_per_ns_count: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_COUNT')|default(2000, true)|int }}"
 deployments_per_ns_pod_image: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_POD_IMAGE')|default('gcr.io/google_containers/pause-amd64:3.0', true) }}"
+deployments_per_ns_stepsize: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_STEPSIZE')|default(50, true) }}"
+deployments_per_ns_pause: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_PAUSE')|default(60, true) }}"
+deployments_per_ns_ts_timeout: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_TS_TIMEOUT')|default(600, true) }}"
+deployments_per_ns_initial_delay: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_INITIAL_DELAY')|default(1000, true) }}"
+deployments_per_ns_delay: "{{ lookup('env', 'DEPLOYMENTS_PER_NS_DELAY')|default(1000, true) }}"
 workload_nodeselector: "{{ lookup('env', 'WORKLOAD_NODESELECTOR')|default('', true) }}"
 workload_script_config: "scale-ci-deployments-per-ns-script"
 
