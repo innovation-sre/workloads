@@ -75,7 +75,8 @@ data:
       HOST=${host} envsubst < /root/workload/ssh_config.template >> /.ssh/config
     done
     cat /.ssh/config.bak >> ~/.ssh/config || true
-    chmod 0600 /.ssh/config || true
+    ls -alF /
+    #chmod 0600 /.ssh/config || true
     #cp /root/workload/fiotest.sh /tmp/
 
     # Execute fio test
