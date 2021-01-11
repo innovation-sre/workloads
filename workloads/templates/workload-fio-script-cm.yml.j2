@@ -64,6 +64,7 @@ data:
     # wait until all pods are started and then collect data
     while [[ $(oc get pods -n {{ fiotest_basename }}0 | grep fiotest-pod | grep -cE "Running|Completed" ) -lt {{ fiotest_nodes_list|length * fiotest_completions_per_job|int }} ]] ; do
       sleep 10
+      oc adm policy add-scc-to-user privileged -z useroot -n {{ fiotest_basename }}0
       echo "Waiting on pods ({{ fiotest_nodes_list|length * fiotest_completions_per_job|int }}) to start..."
     done
     ## necessary for user diffrent than root
@@ -197,7 +198,6 @@ data:
           export GIT_COMMITTER_NAME="scale-ci"
           export GIT_COMMITTER_EMAIL="scale-ci@redhat.com"
           rm -rf /mnt/pvcmount/fio-parser
-          git clone https://github.com/innovation-sre/fio-parser.git /mnt/pvcmount/fio-parser
           echo "------FIO PROFILE (start)------"
           cat /root/workload/test.fio
           echo "------FIO PROFILE (end)------"
@@ -207,7 +207,7 @@ data:
           echo "------FIO RESULTS (start)------"
           cat /mnt/pvcmount/fio-output
           echo "------FIO RESULTS (end)------"
-          python3 /mnt/pvcmount/fio-parser/fio-parser.py /mnt/pvcmount/fio-output
+          python3 /fio-parser/fio-parser.py /mnt/pvcmount/fio-output
     parameters:
     - name: IDENTIFIER
       description: Number to append to the name of resources
