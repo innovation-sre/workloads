@@ -108,6 +108,9 @@ data:
             echo -e "Retrying ${counter}, Sleeping for ${sleepTime} sec"
         fi
         sleep $sleepTime
+        if [[ $counter -eq 1 ]]; then
+            oc adm policy add-scc-to-user anyuid -n ${namespace} default
+        fi
     done
     
     maxreplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.maxReplicas')
