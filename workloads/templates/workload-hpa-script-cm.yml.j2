@@ -60,7 +60,7 @@ data:
     #oc delete clusterrolebinding/kube-stresscheck-psp || :
     #oc delete psp/kube-stresscheck-psp || :
     VIPERCONFIG=/root/workload/hpatest.yml run_snafu -t cl scale-ci --cl-output True --dir /tmp/snafu_results -p openshift-tests
-    oc adm policy add-scc-to-user anyuid -n hpatest0 default
+    oc adm policy add-scc-to-user anyuid -n hpatest0 -z default
     echo "$(date -u) Pods for HPA test created."
     # wait until all pods are started and then collect data
     #while [[ $(oc get job -n scale-ci-tooling scale-ci-hpa -o json | jq -e '.status.active==1') == "true"  ]] ; do
@@ -94,6 +94,9 @@ data:
     status=2
     
     # Check HPA scalability
+    if [[ $counter -eq 1 ]]; then
+        oc adm policy add-scc-to-user anyuid -n ${namespace} -z default
+    fi
     while [ $counter -le $retries ]
     do
         ((counter++))
@@ -108,9 +111,6 @@ data:
             echo -e "Retrying ${counter}, Sleeping for ${sleepTime} sec"
         fi
         sleep $sleepTime
-        if [[ $counter -eq 1 ]]; then
-            oc adm policy add-scc-to-user anyuid -n ${namespace} default
-        fi
     done
     
     maxreplicas=$(oc get hpa ${hpa_resource} -n ${namespace} -o json| jq '.spec.maxReplicas')
@@ -273,57 +273,6 @@ data:
               configMap:
                 name: scale-ci-workload-script
                 defaultMode: 0744
-    - apiVersion: v1
-      kind: ServiceAccount
-      metadata:
-        name: hpa-sa
-        namespace: {{ hpa_basename }}${IDENTIFIER}
-    - apiVersion: rbac.authorization.k8s.io/v1
-      kind: Role
-      metadata:
-        name: hpa-role
-        namespace: {{ hpa_basename }}${IDENTIFIER}
-      rules:
-      - apiGroups:
-          - policy
-          - extensions
-        resources:
-          - podsecuritypolicies
-        verbs:
-          - use
-        resourceNames:
-            - hpa-psp
-    - apiVersion: rbac.authorization.k8s.io/v1
-      kind: RoleBinding
-      metadata:
-        name: hpa-role-binding
-        namespace: {{ hpa_basename }}${IDENTIFIER}
-      subjects:
-        - kind: ServiceAccount
-          name: hpa-sa
-          namespace: {{ hpa_basename }}${IDENTIFIER}
-      roleRef:
-        kind: Role
-        name: hpa-role
-        apiGroup: rbac.authorization.k8s.io
-    - apiVersion: policy/v1beta1
-      kind: PodSecurityPolicy
-      metadata:
-        name: hpa-psp
-      spec:
-        privileged: true
-        runAsUser:
-         rule: 'RunAsAny'
-        supplementalGroups:
-          rule: 'RunAsAny'
-        fsGroup:
-          rule: 'RunAsAny'
-        seLinux:
-          rule: 'RunAsAny'
-        volumes:
-          - configMap
-          - emptyDir
-          - secret
     - apiVersion: apps/v1
       kind: Deployment
       metadata:
