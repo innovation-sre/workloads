@@ -205,7 +205,7 @@ data:
       spec:
         parallelism: {{ stress_parallelism }}
         completions: {{ stress_completions }}
-        backoffLimit: 0
+        backoffLimit: 20
         selector:
           name: stress
         template:
