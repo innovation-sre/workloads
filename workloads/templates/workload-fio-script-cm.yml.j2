@@ -268,7 +268,7 @@ data:
             containers:
               - name: "fio"
                 image: "{{ fiotest_pod_image }}"
-                imagePullPolicy: IfNotPresent
+                imagePullPolicy: Always
                 command: ["/root/workload/fiotest.sh"]
                 env:
                   - name: FIO_SSH_PORT
