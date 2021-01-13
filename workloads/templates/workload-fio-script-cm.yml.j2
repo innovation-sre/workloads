@@ -173,19 +173,19 @@ data:
 
           [test-multi-file-io-4]
           new_group
-          iodepth=128
+          iodepth={{ fiotest_iodepth }}
           blocksize=4k
           nrfiles={{ fiotest_samples }}
 
           [test-multi-file-io-8]
           new_group
-          iodepth=128
+          iodepth={{ fiotest_iodepth }}
           blocksize=8k
           nrfiles={{ fiotest_samples }}
 
           [test-multi-file-io-64]
           new_group
-          iodepth=128
+          iodepth={{ fiotest_iodepth }}
           blocksize=64k
           nrfiles={{ fiotest_samples }}
         fiotest.sh: |
@@ -297,6 +297,8 @@ data:
                     value: "{{ fiotest_node }}"
                   - name: FIOTEST_JOB_ID
                     value: "fiotest-pod-{{loop.index}}"
+                  - name: FIOTEST_IO_DEPTH
+                    value: "{{ fiotest_iodepth }}"
                 {% if workload_job_privileged| bool %}
                 securityContext:
                     runAsUser: 0
