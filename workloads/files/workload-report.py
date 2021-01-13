@@ -238,7 +238,7 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file, start_time=0, 
         )
 
     for k, v in data_set.items():
-        fig.update_yaxes(title_text=y_label, secondary_y=True)
+        fig.update_yaxes(title_text=y_label, secondary_y=True, tickformat = 'g')
 
     # label angle
     fig.update_xaxes(tickangle=45)
