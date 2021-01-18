@@ -182,7 +182,7 @@ def mergeMetrics(list1, list2, start, end):
             mergedMetrics[i] = merged.get(i)
         else:
             mergedMetrics[i] = 0.0
-
+    #print("MERGED DATA: ", mergedMetrics)
     return mergedMetrics
 
 
@@ -208,7 +208,8 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file, start_time=0, 
     for i in x_axis:
         ts = datetime.datetime.fromtimestamp(int(i)).isoformat()
         timestamp.append(str(ts).split('T')[1])
-
+    print("")
+    print("X_AXIS: ", x_axis)
     # Group metrics by dimension i
     for i in y_axis:
         data_set[i] = []
@@ -228,10 +229,14 @@ def plotGraph(csv_file, plot_title, x_label, y_label, image_file, start_time=0, 
     # Draw/plot chart
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     x_label = "Time <from: " + timestamp[0] + " to " + timestamp[-1] + ">"
-
+    print("")
+    print("Timestamps: ", timestamp)
     for k, v in data_set.items():
+        print("")
         print(k, v)
         merged_data = mergeMetrics(timestamp, v, start_time, end_time)
+        print("Time: ", list(merged_data.keys()))
+        print("Values: ", list(merged_data.values()))
         fig.add_trace(
             go.Scatter(x=list(merged_data.keys()), y=list(merged_data.values()), name=k, mode="lines+markers", line_shape='spline', connectgaps=True),
             secondary_y=True,
